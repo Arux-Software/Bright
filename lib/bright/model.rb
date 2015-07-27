@@ -7,12 +7,12 @@ module Bright
     end
     
     def assign_attributes(new_attributes)
-      if !new_attributes.respond_to?(:stringify_keys)
+      if !new_attributes.is_a?(Hash)
         raise ArgumentError, "When assigning attributes, you must pass a hash as an argument."
       end
-      return if new_attributes.blank?
+      return if new_attributes.empty?
 
-      attributes = new_attributes.stringify_keys
+      attributes = Hash[new_attributes.collect{|k,v| [k.to_sym, v]}]
       _assign_attributes(attributes)
     end
         
