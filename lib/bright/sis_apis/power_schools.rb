@@ -21,6 +21,13 @@ module Bright
         raise NotImplementedError
       end
       
+      def subscribe_student(student)
+        raise NotImplementedError
+      end
+      
+      def retrive_access_token
+        "token"
+      end
     end
   end
 end
