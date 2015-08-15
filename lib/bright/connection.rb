@@ -44,6 +44,7 @@ module Bright
           request = HTTPI::Request.new(endpoint.to_s)
           request.headers = headers
           request.body = body if body
+          request.auth.ssl.verify_mode = :none if !@verify_peer
           configure_proxy(request)
           configure_timeouts(request)
           
