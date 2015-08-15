@@ -12,13 +12,12 @@ module Bright
       attr_accessor :connection_options
       
       def initialize(options = {})
-        self.connection_options = options[:connection]
-        # connection hash example
+        self.connection_options = options[:connection] || {}
         # {
-        #   :key => "0ee8c369d0b5",
-        #   :secret => "3ff3adfe0d734259b451dd2c8ef672ae",
-        #   :district_id => "8999",
-        #   :uri => "https://apitest.tiescloud.net/v1.0"
+        #   :key => "",
+        #   :secret => "",
+        #   :district_id => "",
+        #   :uri => ""
         # }
       end
       
@@ -128,7 +127,6 @@ module Bright
           catt[:last_name]        = (attrs["LastName"] || attrs["SurName"]).strip
         end
         
-        # catt[:nick_name] not supported
         catt[:state_student_id] = (attrs["StateId"] || attrs["StudentStateId"]).to_s
         catt[:sis_student_id]   = attrs["StudentId"].to_s
         catt[:homeless_code]    = attrs["HomelessCode"]
