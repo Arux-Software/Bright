@@ -7,7 +7,7 @@ module Bright
     # TODO:: map contact info (addresses, email, phone, etc)
 
     def name
-      "#{self.first_name} #{self.middle_name} #{self.last_name}".gsub(/\s+/, " ")
+      "#{self.first_name} #{self.middle_name} #{self.last_name}".gsub(/\s+/, " ").strip
     end
     
   end
