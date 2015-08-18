@@ -21,8 +21,9 @@ module Bright
         # }
       end
       
-      def get_student(params)
-        params[:rpp] = 1
+      def get_student(params, options = {})
+        params = self.apply_options(params, options.merge({:per_page => 1}))
+
         # Students only gets you students that are enrolled in a school for a given school year.
         students_response_hash = self.request(:get, 'Students/', self.map_student_params(params))
         found_student = nil 
@@ -39,24 +40,36 @@ module Bright
         found_student
       end
       
-      def get_students(params)
-        # Students only gets you students that are enrolled in a school for a given school year.
-        students_response_hash = self.request(:get, 'Students/', self.map_student_params(params))
-        # Students/Family can get you students that are not enrolled in a school for a given school year.
-        family_response_hash = self.request(:get, 'Students/Family/', self.map_student_params(params))
+      def get_students(params, options = {})
+        params = self.apply_options(params, options)
         
-        found_students = []
-        if students_response_hash["Return"]
-          found_students += students_response_hash["Return"].collect{|hsh| Student.new(convert_student_data(hsh))}
+        if params[:schoolyear]
+          # Students only gets you students that are enrolled in a school for a given school year.
+          response_hash = self.request(:get, self.apply_page_to_url('Students/', options[:page]), self.map_student_params(params))
+        else
+          # Students/Family can get you students that are not enrolled in a school for a given school year.
+          response_hash = self.request(:get, self.apply_page_to_url('Students/Family/', options[:page]), self.map_student_params(params))
         end
-        if family_response_hash["Return"]
-          family_response_hash["Return"].collect{|hsh| Student.new(convert_student_data(hsh))}.each do |st|
-            if !found_students.any?{|fs| fs.sis_student_id == st.sis_student_id or fs.state_student_id == st.state_student_id}
-              found_students << st
-            end
-          end
+        
+        students = response_hash["Return"].collect{|hsh| Student.new(convert_student_data(hsh))}
+        total_results = response_hash["TotalCount"].to_i
+        
+        if options[:wrap_in_collection] != false
+          api = self
+          load_more_call = proc { |page|
+            # pages start at one, so add a page here
+            api.get_students(params, {:wrap_in_collection => false, :page => (page + 1)})
+          }
+
+          ResponseCollection.new({
+            :seed_page => students, 
+            :total => total_results,
+            :per_page => options[:per_page], 
+            :load_more_call => load_more_call
+          })
+        else
+          students
         end
-        found_students
       end
       
       def create_student(student)
@@ -91,7 +104,6 @@ module Bright
       
       def map_student_params(params)
         params = params.dup
-        default_params = {"rpp" => 100000, "schoolyear" => Date.today.year}
         
         params["studentname"] = params.delete(:name)
         params["studentname"] ||= "#{params.delete(:last_name)}, #{params.delete(:first_name)} #{params.delete(:middle_name)}".strip
@@ -104,7 +116,7 @@ module Bright
           [k,v]
         end]
         
-        default_params.merge(params).reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
+        params.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
       
       def convert_student_data(attrs)
@@ -143,6 +155,17 @@ module Bright
         end
         
         catt.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
+      end
+      
+      def apply_options(params, options)
+        options[:per_page] = params[:rpp] ||= params.delete(:per_page) || options[:per_page] || 100
+        options[:page] = params.delete(:page) || options[:page]
+        params[:schoolyear] ||= params.delete(:school_year) || options[:school_year]
+        params
+      end
+      
+      def apply_page_to_url(url, page)
+        "#{url}#{url[-1] == "/" ? "" : "/"}#{page}"
       end
       
       def headers_for_auth(uri)

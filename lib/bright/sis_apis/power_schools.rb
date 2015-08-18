@@ -20,20 +20,44 @@ module Bright
         # }
       end
       
-      def get_student(params)
-        self.get_students(:pagesize => 1).first
+      def get_student(params, options = {})
+        self.get_students(params, options.merge(:per_page => 1)).first
       end
       
-      def get_students(params)
+      def get_students(params, options = {})
         params = self.apply_expansions(params)
+        params = self.apply_options(params, options)
 
+        if options[:wrap_in_collection] != false
+          students_count_response_hash = self.request(:get, 'ws/v1/district/student/count', self.map_student_params(params))
+          # {"resource"=>{"count"=>293}}
+          total_results = students_count_response_hash["resource"]["count"].to_i if students_count_response_hash["resource"]
+        end
+        
         students_response_hash = self.request(:get, 'ws/v1/district/student', self.map_student_params(params))
-
+   
         students_hash = [students_response_hash["students"]["student"]].flatten
         
-        students_hash.collect {|st_hsh|
+        students = students_hash.compact.collect {|st_hsh|
           Student.new(convert_student_data(st_hsh))
         }
+        
+        if options[:wrap_in_collection] != false
+          api = self
+          load_more_call = proc { |page|
+            # pages start at one, so add a page here
+            api.get_students(params, {:wrap_in_collection => false, :page => (page + 1)})
+          }
+
+          ResponseCollection.new({
+            :seed_page => students, 
+            :total => total_results,
+            :per_page => params[:pagesize], 
+            :load_more_call => load_more_call
+          })
+        else
+          students
+        end
       end
       
       def create_student(student)
@@ -150,6 +174,12 @@ module Bright
           :expansions => (%w(demographics addresses ethnicity_race phones) & (self.expansion_options[:expansions] || [])).join(","),
           :extensions => (%w(studentcorefields) & (self.expansion_options[:extensions] || [])).join(",")
         })
+      end
+      
+      def apply_options(params, options)
+        options[:per_page] = params[:pagesize] ||= params.delete(:per_page) || options[:per_page] || 100
+        params[:page] ||= options[:page]
+        params
       end
       
       def headers_for_access_token
