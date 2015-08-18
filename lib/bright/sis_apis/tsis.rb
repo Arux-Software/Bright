@@ -107,7 +107,8 @@ module Bright
         
         params["studentname"] = params.delete(:name)
         params["studentname"] ||= "#{params.delete(:last_name)}, #{params.delete(:first_name)} #{params.delete(:middle_name)}".strip
-        params["studentids"] = [params.delete(:state_student_id), params.delete(:sis_student_id)].compact.join(",")
+        params["studentids"] = params.delete(:sis_student_id)
+
         params = Hash[params.collect do |k,v|
           if v.is_a?(Array)
             v = v.join(",")
