@@ -29,17 +29,17 @@ module Bright
         params = self.apply_options(params, options)
 
         if options[:wrap_in_collection] != false
-          students_count_response_hash = self.request(:get, 'ws/v1/district/student/count', self.map_student_params(params))
+          students_count_response_hash = self.request(:get, 'ws/v1/district/student/count', self.map_search_params(params))
           # {"resource"=>{"count"=>293}}
           total_results = students_count_response_hash["resource"]["count"].to_i if students_count_response_hash["resource"]
         end
         
-        students_response_hash = self.request(:get, 'ws/v1/district/student', self.map_student_params(params))
+        students_response_hash = self.request(:get, 'ws/v1/district/student', self.map_search_params(params))
    
         students_hash = [students_response_hash["students"]["student"]].flatten
         
         students = students_hash.compact.collect {|st_hsh|
-          Student.new(convert_student_data(st_hsh))
+          Student.new(convert_to_student_data(st_hsh))
         }
         
         if options[:wrap_in_collection] != false
@@ -61,6 +61,7 @@ module Bright
       end
       
       def create_student(student)
+        
         raise NotImplementedError
       end
       
@@ -107,7 +108,7 @@ module Bright
       
       protected
       
-      def map_student_params(params)
+      def map_search_params(params)
         params = params.dup
         default_params = {}
         
@@ -128,7 +129,7 @@ module Bright
         default_params.merge(params).reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
       
-      def convert_student_data(attrs)
+      def convert_to_student_data(attrs)
         cattrs = {}
         
         
@@ -157,6 +158,9 @@ module Bright
         end
         
         cattrs.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
+      end
+      
+      def convert_from_student_data(student)
       end
       
       def apply_expansions(params)

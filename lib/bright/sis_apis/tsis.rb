@@ -25,16 +25,16 @@ module Bright
         params = self.apply_options(params, options.merge({:per_page => 1}))
 
         # Students only gets you students that are enrolled in a school for a given school year.
-        students_response_hash = self.request(:get, 'Students/', self.map_student_params(params))
+        students_response_hash = self.request(:get, 'Students/', self.map_search_params(params))
         found_student = nil 
         if students_response_hash["Return"] and students_response_hash["Return"].first
-          found_student =  Student.new(convert_student_data(students_response_hash["Return"].first))
+          found_student =  Student.new(convert_to_student_data(students_response_hash["Return"].first))
         end
         if found_student.nil?
           # Students/Family can get you students that are not enrolled in a school for a given school year.
-          family_response_hash = self.request(:get, 'Students/Family/', self.map_student_params(params))
+          family_response_hash = self.request(:get, 'Students/Family/', self.map_search_params(params))
           if family_response_hash["Return"] and family_response_hash["Return"].first
-            found_student =  Student.new(convert_student_data(family_response_hash["Return"].first))
+            found_student =  Student.new(convert_to_student_data(family_response_hash["Return"].first))
           end
         end
         found_student
@@ -45,13 +45,13 @@ module Bright
         
         if params[:schoolyear]
           # Students only gets you students that are enrolled in a school for a given school year.
-          response_hash = self.request(:get, self.apply_page_to_url('Students/', options[:page]), self.map_student_params(params))
+          response_hash = self.request(:get, self.apply_page_to_url('Students/', options[:page]), self.map_search_params(params))
         else
           # Students/Family can get you students that are not enrolled in a school for a given school year.
-          response_hash = self.request(:get, self.apply_page_to_url('Students/Family/', options[:page]), self.map_student_params(params))
+          response_hash = self.request(:get, self.apply_page_to_url('Students/Family/', options[:page]), self.map_search_params(params))
         end
         
-        students = response_hash["Return"].collect{|hsh| Student.new(convert_student_data(hsh))}
+        students = response_hash["Return"].collect{|hsh| Student.new(convert_to_student_data(hsh))}
         total_results = response_hash["TotalCount"].to_i
         
         if options[:wrap_in_collection] != false
@@ -102,7 +102,7 @@ module Bright
       
       protected
       
-      def map_student_params(params)
+      def map_search_params(params)
         params = params.dup
         
         params["studentname"] = params.delete(:name)
@@ -120,7 +120,7 @@ module Bright
         params.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
       
-      def convert_student_data(attrs)
+      def convert_to_student_data(attrs)
         catt = {}
         if attrs["StudentName"]
           split_name = attrs["StudentName"].strip.split(",")
