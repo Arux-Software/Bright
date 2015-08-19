@@ -192,8 +192,8 @@ module Bright
           hsh = self.request(:get, 'ws/v1/district/student', {:pagesize => 1, :q => "local_id==0"})
           if hsh and hsh["students"]
             self.expansion_options = {
-              :expansions => hsh["students"]["@expansions"].to_s.split(", "),
-              :extensions => hsh["students"]["@extensions"].to_s.split(", "),
+              :expansions => hsh["students"]["@expansions"].to_s.split(/\,\s?/),
+              :extensions => hsh["students"]["@extensions"].to_s.split(/\,\s?/),
             }
           end
         end
