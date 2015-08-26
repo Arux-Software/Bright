@@ -21,7 +21,7 @@ module Bright
         # }
       end
       
-      def get_student(params, options = {})
+      def get_student(params = {}, options = {})
         params = self.apply_options(params, options.merge({:per_page => 1}))
 
         # Students only gets you students that are enrolled in a school for a given school year.
@@ -40,7 +40,7 @@ module Bright
         found_student
       end
       
-      def get_students(params, options = {})
+      def get_students(params = {}, options = {})
         params = self.apply_options(params, options)
         
         if params[:schoolyear]

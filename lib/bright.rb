@@ -3,6 +3,8 @@ require "bright/errors"
 
 require "bright/model"
 require "bright/student"
+require "bright/enrollment"
+require "bright/school"
 
 require "bright/connection"
 require "bright/response_collection"
