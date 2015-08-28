@@ -9,9 +9,8 @@ require "bright/school"
 require "bright/connection"
 require "bright/response_collection"
 
-
-require "bright/sis_api/tsis.rb"
-require "bright/sis_api/power_schools.rb"
+require "bright/sis_apis/tsis.rb"
+require "bright/sis_apis/power_schools.rb"
 
 module Bright
 
