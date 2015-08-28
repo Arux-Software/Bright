@@ -1,6 +1,6 @@
 module Bright
   class Address < Model
-    attr_accessor :street, :city, :state, :postal_code, :lattitude, :longitude, :type
+    attr_accessor :street, :apt, :city, :state, :postal_code, :lattitude, :longitude, :type
     attr_accessor :student
     
     alias lat lattitude

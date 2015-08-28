@@ -276,7 +276,7 @@ module Bright
       def convert_from_address_data(address)
         {
           (address.type || "physcial") => {
-            :street => address.street,
+            :street => "#{address.street} #{address.apt}",
             :city => address.city,
             :state_province => address.state,
             :postal_code => address.postal_code,
