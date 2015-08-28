@@ -20,6 +20,12 @@ module Bright
         # }
       end
       
+      def get_student_by_api_id(api_id, params = {})
+        params = self.apply_expansions(params)
+        st_hsh = self.request(:get, "ws/v1/student/#{api_id}", params)
+        Student.new(convert_to_student_data(st_hsh["student"])) if st_hsh and st_hsh["student"]
+      end
+      
       def get_student(params = {}, options = {})
         self.get_students(params, options.merge(:per_page => 1, :wrap_in_collection => false)).first
       end

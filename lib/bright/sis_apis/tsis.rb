@@ -21,6 +21,10 @@ module Bright
         # }
       end
       
+      def get_student_by_api_id(api_id, params = {})
+        self.get_student(params.merge({:sis_student_id => api_id}))
+      end
+      
       def get_student(params = {}, options = {})
         params = self.apply_options(params, options.merge({:per_page => 1}))
 
@@ -142,6 +146,7 @@ module Bright
         
         catt[:state_student_id] = (attrs["StateId"] || attrs["StudentStateId"]).to_s
         catt[:sis_student_id]   = attrs["StudentId"].to_s
+        catt[:api_id]           = attrs["StudentId"].to_s
         catt[:homeless_code]    = attrs["HomelessCode"]
 
         # "Economic\":{\"Description\":\"\",\"EconomicIndicatorId\":\"0\"}
