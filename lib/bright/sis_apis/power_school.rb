@@ -280,7 +280,7 @@ module Bright
             :city => address.city,
             :state_province => address.state,
             :postal_code => address.postal_code,
-            :grid_location => address.geographical_coordinates
+            :grid_location => address.geographical_coordinates.gsub(",", ", ") # make sure there is a comma + space
           }.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
         }
       end
@@ -304,7 +304,7 @@ module Bright
         cattrs[:city] = attrs["city"]
         cattrs[:state] = attrs["state_province"]
         cattrs[:postal_code] = attrs["postal_code"]
-        if attrs["grid_location"] and lat_lng = attrs["grid_location"].split(",")
+        if attrs["grid_location"] and lat_lng = attrs["grid_location"].split(/,\s?/)
           cattrs[:lattitude], cattrs[:longitude] = lat_lng
         end
         
