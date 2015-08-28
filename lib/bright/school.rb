@@ -1,5 +1,6 @@
 module Bright
   class School < Model
-    attr_accessor :api_id, :name, :number
+    @attribute_names = [:api_id, :name, :number]
+    attr_accessor *@attribute_names
   end
 end

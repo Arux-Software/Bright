@@ -68,14 +68,31 @@ module Bright
       
       def create_student(student, additional_params = {})
         response = self.request(:post, 'ws/v1/student', self.convert_from_student_data(student, "INSERT", additional_params))
-        puts "#{response.inspect}"
+        if response["results"] and response["results"]["insert_count"] == 1
+          student.api_id = response["results"]["result"]["success_message"]["id"]
+
+          # update our local student object with any data the server might have updated
+          nstudent = self.get_student_by_api_id(student.api_id)
+          student.assign_attributes(Hash[Bright::Student.attribute_names.collect{|n| [n, nstudent.send(n)]}].reject{|k,v| v.nil?})
+
+          # enrollment is no longer needed as creation is over
+          student.enrollment = nil
+          nstudent = nil
+        else
+          puts response.inspect
+        end
         student
       end
       
       def update_student(student, additional_params = {})
         response = self.request(:post, 'ws/v1/student', self.convert_from_student_data(student, "UPDATE", additional_params))
-        puts "#{response.inspect}"
-        student
+        if response["results"] and response["results"]["update_count"] == 1
+          student.api_id = response["results"]["result"]["success_message"]["id"]
+          self.get_student_by_api_id(student.api_id)
+        else
+          puts response.inspect
+          student
+        end
       end
       
       def subscribe_student(student)
@@ -91,7 +108,7 @@ module Bright
           total_results = schools_count_response_hash["resource"]["count"].to_i if schools_count_response_hash["resource"]
         end
 
-        schools_response_hash = self.request(:get, 'ws/v1/district/school', self.map_school_search_params(params))
+        schools_response_hash = self.request(:get, 'ws/v1/district/school', params)
         puts schools_response_hash.inspect
         schools_hsh = [schools_response_hash["schools"]["school"]].flatten
         
@@ -204,7 +221,7 @@ module Bright
           cattrs[:projected_graduation_year] = pg if pg > 0
         end
         
-        cattrs[:addresses] = attrs["addresses"].collect{|a| self.convert_to_address_data(a)}
+        cattrs[:addresses] = attrs["addresses"].to_a.collect{|a| self.convert_to_address_data(a)} if attrs["addresses"]
         
         cattrs.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
@@ -259,9 +276,9 @@ module Bright
         return {} if enrollment.nil?
         {:school_enrollment => {
             :enroll_status => "A",
-            :entry_date => (enrollment.entry_date || Date.today).strftime(Bright::SisApi::PowerSchools::DATE_FORMAT),
+            :entry_date => (enrollment.entry_date || Date.today).strftime(DATE_FORMAT),
             :entry_comment => enrollment.entry_comment,
-            :exit_date => (enrollment.exit_date || enrollment.entry_date || Date.today).strftime(Bright::SisApi::PowerSchools::DATE_FORMAT),
+            :exit_date => (enrollment.exit_date || enrollment.entry_date || Date.today).strftime(DATE_FORMAT),
             :exit_comment => enrollment.exit_comment,
             :grade_level => enrollment.grade,
             :school_number => enrollment.school ? enrollment.school.number : nil
@@ -331,12 +348,12 @@ module Bright
         params.merge({
           :expansions => (%w(demographics addresses ethnicity_race phones contact contact_info) & (self.expansion_options[:expansions] || [])).join(","),
           :extensions => (%w(studentcorefields) & (self.expansion_options[:extensions] || [])).join(",")
-        })
+        }.reject{|k,v| v.empty?})
       end
       
       def apply_options(params, options)
         options[:per_page] = params[:pagesize] ||= params.delete(:per_page) || options[:per_page] || 100
-        params[:page] ||= options[:page]
+        params[:page] ||= options[:page] || 1
         params
       end
       

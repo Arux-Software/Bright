@@ -1,5 +1,7 @@
 module Bright
   class Model
+    @attribute_names = []
+    
     def initialize(attributes={})
       assign_attributes(attributes) if attributes
 
@@ -15,7 +17,11 @@ module Bright
       attributes = Hash[new_attributes.collect{|k,v| [k.to_sym, v]}]
       _assign_attributes(attributes)
     end
-        
+    
+    def self.attribute_names
+      @attribute_names
+    end
+    
     private
 
     def _assign_attributes(attributes)
