@@ -198,32 +198,55 @@ module Bright
           cattrs[:projected_graduation_year] = pg if pg > 0
         end
         
+        cattrs[:addresses] = attrs["addresses"].collect{|a| self.convert_to_address_data(a)}
+        
         cattrs.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
       
       def convert_from_student_data(student, action = nil, additional_params = {})
         return {} if student.nil?
-        {:students => 
-          {:student =>
-            {
-              :client_uid => student.client_id,
-              :action => action,
-              :id => student.api_id,
-              :local_id => student.sis_student_id,
-              :state_province_id => student.state_student_id,
-              :name => {
-                :first_name => student.first_name,  
-                :middle_name => student.middle_name,
-                :last_name => student.last_name
-              }.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?},
-              :demographics => {
-                :gender => student.gender,
-                :birth_date => (student.birth_date ? student.birth_date.strftime(DATE_FORMAT) : nil),
-                :projected_graduation_year => student.projected_graduation_year
-              }.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
-            }.merge(self.convert_from_enrollment_data(student.enrollment)).merge(additional_params).reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
-          }
-        }
+        
+        student_data = {
+          :client_uid => student.client_id,
+          :action => action,
+          :id => student.api_id,
+          :local_id => student.sis_student_id,
+          :state_province_id => student.state_student_id,
+          :name => {
+            :first_name => student.first_name,  
+            :middle_name => student.middle_name,
+            :last_name => student.last_name
+          }.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?},
+          :demographics => {
+            :gender => student.gender,
+            :birth_date => (student.birth_date ? student.birth_date.strftime(DATE_FORMAT) : nil),
+            :projected_graduation_year => student.projected_graduation_year
+          }.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
+        }.merge(additional_params).reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
+        
+        # apply enrollment info
+        if student.enrollment
+          student_data.merge!(self.convert_from_enrollment_data(student.enrollment)) 
+        end
+        
+        # apply addresses
+        address_data = {}
+        if ph = student.addresses.detect{|a| a.type == "physical"}
+          address_data.merge!(self.convert_from_address_data(ph))
+        end
+        if mail = student.addresses.detect{|a| a.type == "mailing"}
+          address_data.merge!(self.convert_from_address_data(mail))
+        end
+        if ph.nil? and mail.nil? and any = student.addresses.first
+          cany = any.clone
+          cany.type = "physical"
+          address_data.merge!(self.convert_from_address_data(cany))
+        end
+        if address_data.size > 0
+          student_data.merge!({:addresses => address_data}) 
+        end
+        
+        {:students => {:student => student_data}}
       end
       
       def convert_from_enrollment_data(enrollment)
@@ -246,6 +269,44 @@ module Bright
         cattrs[:api_id] = attrs["id"]
         cattrs[:name] = attrs["name"]
         cattrs[:number] = attrs["school_number"]
+        
+        cattrs.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
+      end
+      
+      def convert_from_address_data(address)
+        {
+          (address.type || "physcial") => {
+            :street => address.street,
+            :city => address.city,
+            :state_province => address.state,
+            :postal_code => address.postal_code,
+            :grid_location => address.geographical_coordinates
+          }.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
+        }
+      end
+      
+      def convert_to_address_data(attrs)
+        cattrs = {}
+        
+        if attrs.is_a?(Array)
+          if attrs.first.is_a?(String)
+            cattrs[:type] = attrs.first
+            attrs = attrs.last
+          else
+            attrs = attrs.first
+          end
+        else
+          cattrs[:type] = attrs.keys.first
+          attrs = attrs.values.first
+        end
+
+        cattrs[:street] = attrs["street"]
+        cattrs[:city] = attrs["city"]
+        cattrs[:state] = attrs["state_province"]
+        cattrs[:postal_code] = attrs["postal_code"]
+        if attrs["grid_location"] and lat_lng = attrs["grid_location"].split(",")
+          cattrs[:lattitude], cattrs[:longitude] = lat_lng
+        end
         
         cattrs.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end

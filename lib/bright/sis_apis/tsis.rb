@@ -155,7 +155,21 @@ module Bright
           end
         end
         
+        catt[:addresses] = [self.convert_to_address_data(attrs["Address"])] if attrs["Address"]
+        
         catt.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
+      end
+      
+      def convert_to_address_data(attrs)
+        cattrs = {}
+
+        cattrs[:street] = "#{attrs["Line1"]}\n#{attrs["Line2"]}\n#{attrs["Line3"]}".strip
+        cattrs[:city] = attrs["City"]
+        cattrs[:state] = attrs["State"]
+        cattrs[:postal_code] = attrs["Zip"]
+        cattrs[:type] = attrs["Type"].downcase
+        
+        cattrs.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
       
       def apply_options(params, options)

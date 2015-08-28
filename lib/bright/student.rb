@@ -7,6 +7,7 @@ module Bright
                   :frl_status, :sis_student_id, :state_student_id, :last_modified
     
     # TODO:: map contact info (addresses, email, phone, etc)
+    attr_accessor :addresses
 
     def initialize(*args)
       super
@@ -25,6 +26,20 @@ module Bright
     end
     
     alias id client_id
+    
+    def addresses=(array)
+      if array.size <= 0 or array.first.is_a?(Address)
+        @addresses = array
+        @addresses.each{|a| a.student = self}
+      elsif array.first.is_a?(Hash)
+        @addresses = array.collect{|a| Address.new(a.merge(:student => self))}
+      end
+      @addresses ||= []
+    end
+    
+    def addresses
+      @addresses ||= []
+    end
   end
 end
 
