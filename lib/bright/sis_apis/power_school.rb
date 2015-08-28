@@ -276,7 +276,7 @@ module Bright
       def convert_from_address_data(address)
         {
           (address.type || "physcial") => {
-            :street => "#{address.street} #{address.apt}",
+            :street => "#{address.street} #{address.apt}", # powerschool doesn't appear to support passing the apt in the api
             :city => address.city,
             :state_province => address.state,
             :postal_code => address.postal_code,
