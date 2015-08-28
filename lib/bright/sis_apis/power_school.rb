@@ -1,6 +1,6 @@
 module Bright
   module SisApi
-    class PowerSchools
+    class PowerSchool
       DATE_FORMAT = '%Y-%m-%d'
       
       @@description = "Connects to the Power Schools API for accessing student information"
