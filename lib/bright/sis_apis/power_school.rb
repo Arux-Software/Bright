@@ -2,6 +2,7 @@ module Bright
   module SisApi
     class PowerSchool
       DATE_FORMAT = '%Y-%m-%d'
+      INVALID_SEARCH_CHAR_RE = /[\,\;]/
       
       @@description = "Connects to the Power Schools API for accessing student information"
       @@doc_url = "http://psimages.sunnysideschools.org/api-developer-guide-1.6.0/"
@@ -13,7 +14,7 @@ module Bright
         self.connection_options = options[:connection] || {}
         self.expansion_options = options[:expansion] || {}
         # {
-        #   :client_id => "",
+        #   :client_id => "", 
         #   :client_secret => "",
         #   :uri => ""
         #   :access_token => "", #optional
@@ -179,13 +180,16 @@ module Bright
         q = ""
         %w(first_name middle_name last_name).each do |f|
           if fn = params.delete(f.to_sym)
+            fn = fn.gsub(INVALID_SEARCH_CHAR_RE, " ").strip
             q += %(name.#{f}==#{fn};)
           end
         end
         if lid = params.delete(:sis_student_id)
+          lid = lid.gsub(INVALID_SEARCH_CHAR_RE, " ").strip
           q += %(local_id==#{lid};)
         end
         if sid = params.delete(:state_student_id)
+          sid = sid.gsub(INVALID_SEARCH_CHAR_RE, " ").strip
           q += %(state_province_id==#{sid};)
         end
         params[:q] = q
@@ -221,8 +225,10 @@ module Bright
           cattrs[:projected_graduation_year] = pg if pg > 0
         end
         
+        begin
         cattrs[:addresses] = attrs["addresses"].to_a.collect{|a| self.convert_to_address_data(a)} if attrs["addresses"]
-        
+      rescue
+      end
         cattrs.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
       
@@ -241,7 +247,7 @@ module Bright
             :last_name => student.last_name
           }.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?},
           :demographics => {
-            :gender => student.gender,
+            :gender => student.gender.to_s[0].to_s.upcase,
             :birth_date => (student.birth_date ? student.birth_date.strftime(DATE_FORMAT) : nil),
             :projected_graduation_year => student.projected_graduation_year
           }.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
@@ -303,7 +309,7 @@ module Bright
             :city => address.city,
             :state_province => address.state,
             :postal_code => address.postal_code,
-            :grid_location => address.geographical_coordinates.gsub(",", ", ") # make sure there is a comma + space
+            :grid_location => address.geographical_coordinates.to_s.gsub(",", ", ") # make sure there is a comma + space
           }.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
         }
       end
