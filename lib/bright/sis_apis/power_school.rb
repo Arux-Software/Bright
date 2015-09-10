@@ -42,7 +42,6 @@ module Bright
         end
 
         students_response_hash = self.request(:get, 'ws/v1/district/student', self.map_student_search_params(params))
-        puts students_response_hash.inspect
         students_hash = [students_response_hash["students"]["student"]].flatten
         
         students = students_hash.compact.collect {|st_hsh|

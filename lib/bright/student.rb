@@ -5,12 +5,12 @@ module Bright
     @attribute_names = [:client_id, :api_id, :first_name, :middle_name, :last_name, :nick_name, 
                         :birth_date, :grade, :projected_graduation_year, :gender, 
                         :hispanic_ethnicity, :race, :image, :primary_language, :secondary_language, 
-                        :homeless_code, :enrollment, :frl_status, :sis_student_id, 
+                        :homeless_code, :frl_status, :sis_student_id, 
                         :state_student_id, :last_modified]
     attr_accessor *@attribute_names
     
     # TODO:: map contact info (addresses, email, phone, etc)
-    attr_accessor :addresses
+    attr_accessor :enrollment, :addresses
 
     def initialize(*args)
       super
