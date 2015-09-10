@@ -35,7 +35,7 @@ module Bright
         @addresses = array
         @addresses.each{|a| a.student = self}
       elsif array.first.is_a?(Hash)
-        @addresses = array.collect{|a| Address.new(a.merge(:student => self))}
+        @addresses = array.collect{|a| Address.new(a)}
       end
       @addresses ||= []
     end

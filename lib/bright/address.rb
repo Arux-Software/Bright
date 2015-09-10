@@ -2,7 +2,6 @@ module Bright
   class Address < Model
     @attribute_names = [:street, :apt, :city, :state, :postal_code, :lattitude, :longitude, :type]
     attr_accessor *@attribute_names
-    attr_accessor :student
     
     alias lat lattitude
     alias lng longitude
