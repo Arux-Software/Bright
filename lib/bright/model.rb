@@ -22,6 +22,12 @@ module Bright
       @attribute_names
     end
     
+    def to_json
+      Hash[self.class.attribute_names.collect do |n|
+        [n, self.send(n)]
+      end].to_json
+    end
+    
     private
 
     def _assign_attributes(attributes)
