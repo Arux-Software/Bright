@@ -22,6 +22,10 @@ module Bright
         raise NotImplementedError
       end
       
+      def get_schools(params)
+        raise NotImplementedError
+      end
+      
     end
   end
 end
