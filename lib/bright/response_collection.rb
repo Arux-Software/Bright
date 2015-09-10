@@ -43,7 +43,7 @@ class ResponseCollection
   end
   
   def loaded_results
-    @paged_objects.values
+    @paged_objects.values.flatten
   end
   
   alias size total
