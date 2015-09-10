@@ -42,6 +42,10 @@ class ResponseCollection
     last_page.last
   end
   
+  def loaded_results
+    @paged_objects.values
+  end
+  
   alias size total
   alias length total
 
