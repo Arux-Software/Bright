@@ -42,27 +42,31 @@ module Bright
         end
 
         students_response_hash = self.request(:get, 'ws/v1/district/student', self.map_student_search_params(params))
-        students_hash = [students_response_hash["students"]["student"]].flatten
+        if students_response_hash and students_response_hash["students"] && students_response_hash["students"]["student"]
+          students_hash = [students_response_hash["students"]["student"]].flatten
         
-        students = students_hash.compact.collect {|st_hsh|
-          Student.new(convert_to_student_data(st_hsh))
-        }
-        
-        if options[:wrap_in_collection] != false
-          api = self
-          load_more_call = proc { |page|
-            # pages start at one, so add a page here
-            api.get_students(params, {:wrap_in_collection => false, :page => (page + 1)})
+          students = students_hash.compact.collect {|st_hsh|
+            Student.new(convert_to_student_data(st_hsh))
           }
+        
+          if options[:wrap_in_collection] != false
+            api = self
+            load_more_call = proc { |page|
+              # pages start at one, so add a page here
+              api.get_students(params, {:wrap_in_collection => false, :page => (page + 1)})
+            }
 
-          ResponseCollection.new({
-            :seed_page => students, 
-            :total => total_results,
-            :per_page => params[:pagesize], 
-            :load_more_call => load_more_call
-          })
+            ResponseCollection.new({
+              :seed_page => students, 
+              :total => total_results,
+              :per_page => params[:pagesize], 
+              :load_more_call => load_more_call
+            })
+          else
+            students
+          end
         else
-          students
+          []
         end
       end
       
