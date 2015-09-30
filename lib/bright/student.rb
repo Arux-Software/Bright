@@ -1,4 +1,4 @@
-require 'uuid'
+require 'securerandom'
 
 module Bright
   class Student < Model
@@ -18,7 +18,7 @@ module Bright
 
     def initialize(*args)
       super
-      self.client_id ||= UUID.new.generate
+      self.client_id ||= SecureRandom.uuid
       self
     end
     
