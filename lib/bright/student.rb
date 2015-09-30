@@ -9,6 +9,10 @@ module Bright
                         :state_student_id, :last_modified]
     attr_accessor *@attribute_names
     
+    def self.attribute_names
+      @attribute_names
+    end
+    
     # TODO:: map contact info (addresses, email, phone, etc)
     attr_accessor :enrollment, :addresses
 
