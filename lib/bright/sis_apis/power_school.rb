@@ -1,6 +1,6 @@
 module Bright
   module SisApi
-    class PowerSchool
+    class PowerSchool < Base
       DATE_FORMAT = '%Y-%m-%d'
       INVALID_SEARCH_CHAR_RE = /[\,\;]/
       

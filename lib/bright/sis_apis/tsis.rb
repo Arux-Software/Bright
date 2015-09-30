@@ -3,7 +3,7 @@ require 'json'
 
 module Bright
   module SisApi
-    class TSIS
+    class TSIS < Base
       DATE_FORMAT = '%m/%d/%Y'
       
       @@description = "Connects to the TIES API for accessing TIES TSIS student information"

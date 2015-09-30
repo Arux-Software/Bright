@@ -1,6 +1,6 @@
 module Bright
   module SisApi
-    class Synergy
+    class Synergy < Base
       
       def get_student_by_api_id(api_id)
         raise NotImplementedError

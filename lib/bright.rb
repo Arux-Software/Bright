@@ -10,6 +10,7 @@ require "bright/school"
 require "bright/connection"
 require "bright/response_collection"
 
+require "bright/sis_apis/base.rb"
 require "bright/sis_apis/tsis.rb"
 require "bright/sis_apis/power_school.rb"
 require "bright/sis_apis/aeries.rb"
