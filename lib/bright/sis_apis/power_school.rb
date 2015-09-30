@@ -4,7 +4,7 @@ module Bright
       DATE_FORMAT = '%Y-%m-%d'
       INVALID_SEARCH_CHAR_RE = /[\,\;]/
       
-      @@description = "Connects to the Power Schools API for accessing student information"
+      @@description = "Connects to the PowerSchool API for accessing student information"
       @@doc_url = "http://psimages.sunnysideschools.org/api-developer-guide-1.6.0/"
       @@api_version = "1.6.0"
       
