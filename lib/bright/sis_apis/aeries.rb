@@ -1,8 +1,7 @@
 module Bright
   module SisApi
-    class Aeries
-      DATE_FORMAT = '%Y-%m-%d'
-      INVALID_SEARCH_CHAR_RE = /[\,\;]/
+    class Aeries < Base
+      DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
       
       @@description = "Connects to the Aeries API for accessing student information"
       @@doc_url = "http://www.aeries.com/downloads/docs.1234/TechnicalSpecs/Aeries_API_Documentation.pdf"
@@ -130,6 +129,13 @@ module Bright
         cattrs[:state_student_id] = attrs["StateStudentID"]
         
         cattrs[:gender]           = attrs["Sex"]
+        if attrs["Birthdate"]
+          begin 
+            cattrs[:birth_date] = Date.strptime(attrs["Birthdate"], DATE_FORMAT)
+          rescue => e
+            puts "#{e.inspect} #{bd}"
+          end
+        end
         
         #SchoolCode
         
