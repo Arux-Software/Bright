@@ -1,6 +1,7 @@
 require 'uri'
 require 'httpi'
 require 'benchmark'
+require 'securerandom'
 
 module Bright
   class Connection
@@ -47,7 +48,7 @@ module Bright
           request.auth.ssl.verify_mode = :none if !@verify_peer
           configure_proxy(request)
           configure_timeouts(request)
-          
+
           result = case method
           when :get
             raise ArgumentError, "GET requests do not support a request body" if body
@@ -80,7 +81,7 @@ module Bright
     def configure_proxy(http)
       http.proxy = "#{proxy_address}:#{proxy_port}" if proxy_address
     end
-    
+
     def configure_timeouts(http)
       http.open_timeout = open_timeout
       http.read_timeout = read_timeout
