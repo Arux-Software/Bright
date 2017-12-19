@@ -33,11 +33,36 @@ module Bright
       end
 
       def get_student(params = {}, options = {})
-        raise NotImplementedError
+        self.get_students(params, options.merge(:limit => 1, :wrap_in_collection => false)).first
       end
 
       def get_students(params = {}, options = {})
-        raise NotImplementedError
+        params[:limit] ||= 100
+        total_results = 500
+        students_response_hash = self.request(:get, 'users', self.map_student_search_params(params))
+        if students_response_hash and students_response_hash["users"]
+          students_hash = [students_response_hash["users"]].flatten
+
+          students = students_hash.compact.collect {|st_hsh|
+            Student.new(convert_to_student_data(st_hsh))
+          }
+        end
+        if options[:wrap_in_collection] != false
+          api = self
+          load_more_call = proc { |page|
+            # pages start at one, so add a page here
+            params[:offset] = (params[:limit].to_i * page)
+            api.get_students(params, {:wrap_in_collection => false})
+          }
+          ResponseCollection.new({
+            :seed_page => students,
+            :total => total_results,
+            :per_page => params[:limit],
+            :load_more_call => load_more_call
+          })
+        else
+          students
+        end
       end
 
       def create_student(student)
@@ -52,7 +77,6 @@ module Bright
         raise NotImplementedError
       end
 
-
       def request(method, path, params = {})
         uri  = "#{self.connection_options[:uri]}/#{path}"
         body = nil
@@ -62,7 +86,7 @@ module Bright
         else
           body = JSON.dump(params)
         end
-
+        puts uri.inspect
         headers = self.headers_for_auth(uri)
 
         connection = Bright::Connection.new(uri)
@@ -87,6 +111,31 @@ module Bright
         {"Authorization" => consumer.create_signed_request(:get, uri, nil, options)["Authorization"]}
       end
 
+      def map_student_search_params(params)
+        params = params.dup
+        default_params = {}
+
+        filter = []
+        params.each do |k,v|
+          case k.to_s
+          when "first_name"
+            filter << "givenName='#{v}''"
+          when "last_name"
+            filter << "familyName='#{v}'"
+          when "email"
+            filter << "email='#{v}'"
+          when "student_id"
+            filter << "identifier='#{v}'"
+          else
+            default_params[k] = v
+          end
+        end
+        unless filter.empty?
+          params = {"filter" => filter.join(" AND ")}
+        end
+        default_params.merge(params).reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
+      end
+
       def convert_to_student_data(student_params)
         return {} if student_params.nil?
         demographics_params = self.request(:get, "demographics/#{student_params["sourcedId"]}")["demographics"]
@@ -97,9 +146,11 @@ module Bright
           :middle_name => student_params["middleName"],
           :last_name => student_params["familyName"],
           :sis_student_id => student_params["identifier"],
-          :last_modified => student_params["dateLastModified"],
-          :birth_date => Date.parse(demographics_params["birthdate"]).to_s
+          :last_modified => student_params["dateLastModified"]
         }
+        unless demographics_params["birthdate"].nil?
+          student_data_hsh[:birth_date] = Date.parse(demographics_params["birthdate"]).to_s
+        end
         unless demographics_params["sex"].to_s[0].nil?
           student_data_hsh[:gender] = demographics_params["sex"].to_s[0].upcase
         end
