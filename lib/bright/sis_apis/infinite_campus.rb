@@ -37,7 +37,7 @@ module Bright
       end
 
       def get_students(params = {}, options = {})
-        params[:limit] ||= 100
+        params[:limit] = params[:limit] || options[:limit] || 100
         total_results = 500
         students_response_hash = self.request(:get, 'users', self.map_student_search_params(params))
         if students_response_hash and students_response_hash["users"]
@@ -119,7 +119,7 @@ module Bright
         params.each do |k,v|
           case k.to_s
           when "first_name"
-            filter << "givenName='#{v}''"
+            filter << "givenName='#{v}'"
           when "last_name"
             filter << "familyName='#{v}'"
           when "email"
