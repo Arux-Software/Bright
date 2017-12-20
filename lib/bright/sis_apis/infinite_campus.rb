@@ -38,8 +38,8 @@ module Bright
 
       def get_students(params = {}, options = {})
         params[:limit] = params[:limit] || options[:limit] || 100
-        total_results = 500
         students_response_hash = self.request(:get, 'users', self.map_student_search_params(params))
+        total_results = students_response_hash[:response_headers]["x-total-count"].to_i
         if students_response_hash and students_response_hash["users"]
           students_hash = [students_response_hash["users"]].flatten
 
@@ -94,6 +94,7 @@ module Bright
 
         if !response.error?
           response_hash = JSON.parse(response.body)
+          response_hash[:response_headers] = response.headers
         else
           puts "#{response.inspect}"
           puts "#{response.body}"
