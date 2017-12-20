@@ -18,6 +18,7 @@ module Bright
         "white"=>"White",
         "hispanicOrLatinoEthnicity"=>"Hispanic Or Latino"
       }
+      
       def initialize(options = {})
         self.connection_options = options[:connection] || {}
         # {
