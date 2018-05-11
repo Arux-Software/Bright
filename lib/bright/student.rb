@@ -57,5 +57,14 @@ module Bright
       @email_address
     end
 
+    def school=(school_val)
+      if school_val.is_a?(School)
+        @school = school_val
+      elsif school_val.is_a?(Hash)
+        @school = School.new(school_val)
+      end
+      @school
+    end
+
   end
 end

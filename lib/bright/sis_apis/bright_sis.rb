@@ -70,8 +70,33 @@ module Bright
         raise NotImplementedError
       end
 
-      def get_schools(params)
-        raise NotImplementedError
+      def get_schools(params = {}, options = {})
+        params[:limit] = params[:limit] || options[:limit] || 100
+        schools_response_hash = self.request(:get, 'schools', self.map_school_search_params(params))
+        total_results = schools_response_hash[:response_headers]["total"].to_i
+        if schools_response_hash and schools_response_hash["schools"]
+          schools_hash = [schools_response_hash["schools"]].flatten
+
+          schools = schools_hash.compact.collect {|st_hsh|
+            School.new(convert_to_school_data(st_hsh))
+          }
+        end
+        if options[:wrap_in_collection] != false
+          api = self
+          load_more_call = proc { |page|
+            # pages start at one, so add a page here
+            params[:offset] = (params[:limit].to_i * page)
+            api.get_schools(params, {:wrap_in_collection => false})
+          }
+          ResponseCollection.new({
+            :seed_page => schools,
+            :total => total_results,
+            :per_page => params[:limit],
+            :load_more_call => load_more_call
+          })
+        else
+          schools
+        end
       end
 
       def request(method, path, params = {})
@@ -168,7 +193,55 @@ module Bright
           }
         end
 
+        unless student_params["school"].blank?
+          student_data_hsh[:school] = convert_to_school_data(student_params["school"])
+        end
+
         return student_data_hsh
+      end
+
+      def map_school_search_params(attrs)
+        filter_params = {}
+        attrs.each do |k,v|
+          case k.to_s
+          when "api_id"
+            filter_params["id"] = v
+          else
+            filter_params[k] = v
+          end
+        end
+        return filter_params
+      end
+
+      def convert_to_school_data(school_params)
+        return {} if school_params.nil?
+
+        school_data_hsh = {
+          :api_id => school_params["id"],
+          :name => school_params["name"],
+          :number => school_params["number"],
+          :state_id => school_params["state_id"],
+          :low_grade => school_params["low_grade"],
+          :high_grade => school_params["high_grade"],
+          :last_modified => school_params["updated_at"]
+        }
+
+        unless school_params["school_address"].blank?
+          school_data_hsh[:address] = {
+            :street => school_params["school_address"],
+            :city => school_params["school_city"],
+            :state => school_params["school_state"],
+            :postal_code => school_params["school_zip"]
+          }
+        end
+
+        unless school_params["school_phone"].blank?
+          school_data_hsh[:phone_number] = {
+            :phone_number => school_params["school_phone"]
+          }
+        end
+
+        return school_data_hsh
       end
 
     end
