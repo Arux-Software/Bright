@@ -4,6 +4,8 @@ require "bright/errors"
 require "bright/model"
 require "bright/student"
 require "bright/address"
+require "bright/phone_number"
+require "bright/email_address"
 require "bright/enrollment"
 require "bright/school"
 
