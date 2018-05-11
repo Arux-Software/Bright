@@ -100,7 +100,7 @@ module Bright
       end
 
       def request(method, path, params = {})
-        uri  = "#{self.connection_options[:uri]}/#{@@api_version}/#{path}"
+        uri  = "#{self.connection_options[:uri]}/#{path}"
         body = nil
         if method == :get
           query = URI.encode_www_form(params)
