@@ -13,5 +13,14 @@ module Bright
       @address
     end
 
+    def phone_number=(phone_number)
+      if phone_number.is_a?(PhoneNumber)
+        @phone_number = phone_number
+      elsif phone_number.is_a?(Hash)
+        @phone_number = PhoneNumber.new(phone_number)
+      end
+      @phone_number
+    end
+
   end
 end
