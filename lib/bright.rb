@@ -1,6 +1,8 @@
 require "bright/version"
 require "bright/errors"
 
+require "bright/helpers/blank_helper.rb"
+
 require "bright/model"
 require "bright/student"
 require "bright/address"
