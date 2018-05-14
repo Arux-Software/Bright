@@ -3,7 +3,7 @@ require 'securerandom'
 module Bright
   class Student < Model
     @attribute_names = [:client_id, :api_id, :first_name, :middle_name, :last_name, :nick_name,
-                        :birth_date, :grade, :projected_graduation_year, :gender,
+                        :birth_date, :grade, :grade_school_year, :projected_graduation_year, :gender,
                         :hispanic_ethnicity, :race, :image, :primary_language, :secondary_language,
                         :homeless_code, :frl_status, :sis_student_id,
                         :state_student_id, :last_modified]
@@ -14,7 +14,7 @@ module Bright
     end
 
     # TODO:: map contact info (addresses, email, phone, etc)
-    attr_accessor :enrollment, :addresses
+    attr_accessor :enrollment, :addresses, :email_address, :school
 
     def initialize(*args)
       super
@@ -47,5 +47,24 @@ module Bright
     def addresses
       @addresses ||= []
     end
+
+    def email_address=(email)
+      if email.is_a?(EmailAddress)
+        @email_address = email
+      elsif email.is_a?(Hash)
+        @email_address = EmailAddress.new(email)
+      end
+      @email_address
+    end
+
+    def school=(school_val)
+      if school_val.is_a?(School)
+        @school = school_val
+      elsif school_val.is_a?(Hash)
+        @school = School.new(school_val)
+      end
+      @school
+    end
+
   end
 end
