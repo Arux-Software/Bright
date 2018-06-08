@@ -48,6 +48,7 @@ module Bright
         end
         if response_hash["access_token"]
           self.connection_options[:access_token] = response_hash["access_token"]
+          self.connection_options[:access_token_expires] = Time.now + response_hash["expires_in"]
         end
         response_hash
       end
@@ -145,7 +146,9 @@ module Bright
       end
 
       def headers_for_auth
-        self.retrive_access_token if self.connection_options[:access_token].nil?
+        if self.connection_options[:access_token].nil? or self.connection_options[:access_token_expires] < Time.now
+          self.retrive_access_token
+        end
         {
           "Authorization" => "Bearer #{self.connection_options[:access_token]}",
           "Accept" => "application/json;charset=UTF-8",
