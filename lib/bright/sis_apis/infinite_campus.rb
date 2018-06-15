@@ -29,6 +29,7 @@ module Bright
       end
 
       def get_student_by_api_id(api_id, params = {})
+        params = {:role => "student"}.merge(params)
         st_hsh = self.request(:get, "users/#{api_id}", params)
         Student.new(convert_to_student_data(st_hsh["user"])) if st_hsh and st_hsh["user"]
       end
@@ -38,6 +39,7 @@ module Bright
       end
 
       def get_students(params = {}, options = {})
+        params = {:role => "student"}.merge(params)
         params[:limit] = params[:limit] || options[:limit] || 100
         students_response_hash = self.request(:get, 'users', self.map_student_search_params(params))
         total_results = students_response_hash[:response_headers]["x-total-count"].to_i
