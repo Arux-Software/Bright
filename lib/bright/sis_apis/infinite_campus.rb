@@ -129,6 +129,8 @@ module Bright
             filter << "email='#{v}'"
           when "student_id"
             filter << "identifier='#{v}'"
+          when "last_modified"
+            filter << "dateLastModified>'#{v}'"
           else
             default_params[k] = v
           end
