@@ -144,7 +144,6 @@ module Bright
       def convert_to_student_data(student_params)
         return {} if student_params.nil?
         demographics_params = self.request(:get, "demographics/#{student_params["sourcedId"]}")["demographics"]
-
         student_data_hsh = {
           :api_id => student_params["sourcedId"],
           :first_name => student_params["givenName"],
@@ -153,10 +152,20 @@ module Bright
           :sis_student_id => student_params["identifier"],
           :last_modified => student_params["dateLastModified"]
         }
-        unless demographics_params["birthdate"].nil?
+        unless student_params["userIds"].blank?
+          if (state_id_hsh = student_params["userIds"].detect{|user_id_hsh| user_id_hsh["type"] == "stateID"})
+            student_data_hsh[:state_student_id] = state_id_hsh["identifier"]
+          end
+        end
+        unless student_params["email"].blank?
+          student_data_hsh[:email_address] = {
+            :email_address => student_params["email"]
+          }
+        end
+        unless demographics_params["birthdate"].blank?
           student_data_hsh[:birth_date] = Date.parse(demographics_params["birthdate"]).to_s
         end
-        unless demographics_params["sex"].to_s[0].nil?
+        unless demographics_params["sex"].to_s[0].blank?
           student_data_hsh[:gender] = demographics_params["sex"].to_s[0].upcase
         end
         DEMOGRAPHICS_CONVERSION.each do |demographics_key, demographics_value|
