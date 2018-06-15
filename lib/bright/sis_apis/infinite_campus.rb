@@ -5,7 +5,7 @@ module Bright
     class InfiniteCampus < Base
 
       @@description = "Connects to the Infinite Campus OneRoster API for accessing student information"
-      @@doc_url = "https://content.infinitecampus.com/sis/Campus.1633/documentation/oneroster-api/"
+      @@doc_url = "https://content.infinitecampus.com/sis/latest/documentation/oneroster-api"
       @@api_version = "v1.1"
 
       attr_accessor :connection_options
