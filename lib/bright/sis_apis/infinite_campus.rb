@@ -76,8 +76,42 @@ module Bright
         raise NotImplementedError
       end
 
-      def get_schools(params)
-        raise NotImplementedError
+      def get_school_by_api_id(api_id, params = {})
+        sc_hsh = self.request(:get, "schools/#{api_id}", params)
+        School.new(convert_to_school_data(sc_hsh["org"])) if sc_hsh and sc_hsh["org"]
+      end
+
+      def get_school(params = {}, options = {})
+        self.get_schools(params, options.merge(:limit => 1, :wrap_in_collection => false)).first
+      end
+
+      def get_schools(params = {}, options = {})
+        params[:limit] = params[:limit] || options[:limit] || 100
+        schools_response_hash = self.request(:get, 'schools', self.map_school_search_params(params))
+        total_results = schools_response_hash[:response_headers]["x-total-count"].to_i
+        if schools_response_hash and schools_response_hash["orgs"]
+          schools_hash = [schools_response_hash["orgs"]].flatten
+
+          schools = schools_hash.compact.collect {|sc_hsh|
+            School.new(convert_to_school_data(sc_hsh))
+          }
+        end
+        if options[:wrap_in_collection] != false
+          api = self
+          load_more_call = proc { |page|
+            # pages start at one, so add a page here
+            params[:offset] = (params[:limit].to_i * page)
+            api.get_schools(params, {:wrap_in_collection => false})
+          }
+          ResponseCollection.new({
+            :seed_page => schools,
+            :total => total_results,
+            :per_page => params[:limit],
+            :load_more_call => load_more_call
+          })
+        else
+          schools
+        end
       end
 
       def request(method, path, params = {})
@@ -141,8 +175,39 @@ module Bright
         default_params.merge(params).reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
 
+      def map_school_search_params(params)
+        params = params.dup
+        default_params = {}
+        filter = []
+        params.each do |k,v|
+          case k.to_s
+          when "number"
+            filter << "identifier='#{v}'"
+          when "last_modified"
+            filter << "dateLastModified>'#{v}'"
+          else
+            default_params[k] = v
+          end
+        end
+        unless filter.empty?
+          params = {"filter" => filter.join(" AND ")}
+        end
+        default_params.merge(params).reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
+      end
+
+      def convert_to_school_data(school_params)
+        return {} if school_params.blank?
+        school_data_hsh = {
+          :api_id => school_params["sourcedId"],
+          :name => school_params["name"],
+          :number => school_params["identifier"],
+          :last_modified => school_params["dateLastModified"]
+        }
+        return school_data_hsh
+      end
+
       def convert_to_student_data(student_params)
-        return {} if student_params.nil?
+        return {} if student_params.blank?
         demographics_params = self.request(:get, "demographics/#{student_params["sourcedId"]}")["demographics"]
         student_data_hsh = {
           :api_id => student_params["sourcedId"],
