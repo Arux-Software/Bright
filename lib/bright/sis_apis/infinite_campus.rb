@@ -8,7 +8,7 @@ module Bright
       @@doc_url = "https://content.infinitecampus.com/sis/latest/documentation/oneroster-api"
       @@api_version = "v1.1"
 
-      attr_accessor :connection_options
+      attr_accessor :connection_options, :schools_cache
 
       DEMOGRAPHICS_CONVERSION = {
         "americanIndianOrAlaskaNative"=>"American Indian Or Alaska Native",
@@ -239,6 +239,17 @@ module Bright
             student_data_hsh[:race] << demographics_value
           end
         end
+        unless student_params["orgs"].blank?
+          if (s = student_params["orgs"].detect{|org| org["href"] =~ /\/schools\//})
+            self.schools_cache ||= {}
+            if (attending_school = self.schools_cache[s["sourcedId"]]).nil?
+              attending_school = self.get_school_by_api_id(s["sourcedId"])
+              self.schools_cache[s["sourcedId"]] = attending_school
+            end
+          end
+          student_data_hsh[:school] = attending_school
+        end
+
         return student_data_hsh
       end
 
