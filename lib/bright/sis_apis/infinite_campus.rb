@@ -5,10 +5,10 @@ module Bright
     class InfiniteCampus < Base
 
       @@description = "Connects to the Infinite Campus OneRoster API for accessing student information"
-      @@doc_url = "https://content.infinitecampus.com/sis/Campus.1633/documentation/oneroster-api/"
+      @@doc_url = "https://content.infinitecampus.com/sis/latest/documentation/oneroster-api"
       @@api_version = "v1.1"
 
-      attr_accessor :connection_options
+      attr_accessor :connection_options, :schools_cache
 
       DEMOGRAPHICS_CONVERSION = {
         "americanIndianOrAlaskaNative"=>"American Indian Or Alaska Native",
@@ -29,6 +29,7 @@ module Bright
       end
 
       def get_student_by_api_id(api_id, params = {})
+        params = {:role => "student"}.merge(params)
         st_hsh = self.request(:get, "users/#{api_id}", params)
         Student.new(convert_to_student_data(st_hsh["user"])) if st_hsh and st_hsh["user"]
       end
@@ -38,6 +39,7 @@ module Bright
       end
 
       def get_students(params = {}, options = {})
+        params = {:role => "student"}.merge(params)
         params[:limit] = params[:limit] || options[:limit] || 100
         students_response_hash = self.request(:get, 'users', self.map_student_search_params(params))
         total_results = students_response_hash[:response_headers]["x-total-count"].to_i
@@ -74,8 +76,42 @@ module Bright
         raise NotImplementedError
       end
 
-      def get_schools(params)
-        raise NotImplementedError
+      def get_school_by_api_id(api_id, params = {})
+        sc_hsh = self.request(:get, "schools/#{api_id}", params)
+        School.new(convert_to_school_data(sc_hsh["org"])) if sc_hsh and sc_hsh["org"]
+      end
+
+      def get_school(params = {}, options = {})
+        self.get_schools(params, options.merge(:limit => 1, :wrap_in_collection => false)).first
+      end
+
+      def get_schools(params = {}, options = {})
+        params[:limit] = params[:limit] || options[:limit] || 100
+        schools_response_hash = self.request(:get, 'schools', self.map_school_search_params(params))
+        total_results = schools_response_hash[:response_headers]["x-total-count"].to_i
+        if schools_response_hash and schools_response_hash["orgs"]
+          schools_hash = [schools_response_hash["orgs"]].flatten
+
+          schools = schools_hash.compact.collect {|sc_hsh|
+            School.new(convert_to_school_data(sc_hsh))
+          }
+        end
+        if options[:wrap_in_collection] != false
+          api = self
+          load_more_call = proc { |page|
+            # pages start at one, so add a page here
+            params[:offset] = (params[:limit].to_i * page)
+            api.get_schools(params, {:wrap_in_collection => false})
+          }
+          ResponseCollection.new({
+            :seed_page => schools,
+            :total => total_results,
+            :per_page => params[:limit],
+            :load_more_call => load_more_call
+          })
+        else
+          schools
+        end
       end
 
       def request(method, path, params = {})
@@ -127,6 +163,10 @@ module Bright
             filter << "email='#{v}'"
           when "student_id"
             filter << "identifier='#{v}'"
+          when "last_modified"
+            filter << "dateLastModified>='#{v}'"
+          when "role"
+            filter << "role='#{v}'"
           else
             default_params[k] = v
           end
@@ -137,10 +177,40 @@ module Bright
         default_params.merge(params).reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
 
-      def convert_to_student_data(student_params)
-        return {} if student_params.nil?
-        demographics_params = self.request(:get, "demographics/#{student_params["sourcedId"]}")["demographics"]
+      def map_school_search_params(params)
+        params = params.dup
+        default_params = {}
+        filter = []
+        params.each do |k,v|
+          case k.to_s
+          when "number"
+            filter << "identifier='#{v}'"
+          when "last_modified"
+            filter << "dateLastModified>='#{v}'"
+          else
+            default_params[k] = v
+          end
+        end
+        unless filter.empty?
+          params = {"filter" => filter.join(" AND ")}
+        end
+        default_params.merge(params).reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
+      end
 
+      def convert_to_school_data(school_params)
+        return {} if school_params.blank?
+        school_data_hsh = {
+          :api_id => school_params["sourcedId"],
+          :name => school_params["name"],
+          :number => school_params["identifier"],
+          :last_modified => school_params["dateLastModified"]
+        }
+        return school_data_hsh
+      end
+
+      def convert_to_student_data(student_params)
+        return {} if student_params.blank?
+        demographics_params = self.request(:get, "demographics/#{student_params["sourcedId"]}")["demographics"]
         student_data_hsh = {
           :api_id => student_params["sourcedId"],
           :first_name => student_params["givenName"],
@@ -149,10 +219,20 @@ module Bright
           :sis_student_id => student_params["identifier"],
           :last_modified => student_params["dateLastModified"]
         }
-        unless demographics_params["birthdate"].nil?
+        unless student_params["userIds"].blank?
+          if (state_id_hsh = student_params["userIds"].detect{|user_id_hsh| user_id_hsh["type"] == "stateID"})
+            student_data_hsh[:state_student_id] = state_id_hsh["identifier"]
+          end
+        end
+        unless student_params["email"].blank?
+          student_data_hsh[:email_address] = {
+            :email_address => student_params["email"]
+          }
+        end
+        unless demographics_params["birthdate"].blank?
           student_data_hsh[:birth_date] = Date.parse(demographics_params["birthdate"]).to_s
         end
-        unless demographics_params["sex"].to_s[0].nil?
+        unless demographics_params["sex"].to_s[0].blank?
           student_data_hsh[:gender] = demographics_params["sex"].to_s[0].upcase
         end
         DEMOGRAPHICS_CONVERSION.each do |demographics_key, demographics_value|
@@ -161,6 +241,17 @@ module Bright
             student_data_hsh[:race] << demographics_value
           end
         end
+        unless student_params["orgs"].blank?
+          if (s = student_params["orgs"].detect{|org| org["href"] =~ /\/schools\//})
+            self.schools_cache ||= {}
+            if (attending_school = self.schools_cache[s["sourcedId"]]).nil?
+              attending_school = self.get_school_by_api_id(s["sourcedId"])
+              self.schools_cache[s["sourcedId"]] = attending_school
+            end
+          end
+          student_data_hsh[:school] = attending_school
+        end
+
         return student_data_hsh
       end
 
