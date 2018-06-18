@@ -165,6 +165,8 @@ module Bright
             filter << "identifier='#{v}'"
           when "last_modified"
             filter << "dateLastModified>='#{v}'"
+          when "role"
+            filter << "role='#{v}'"
           else
             default_params[k] = v
           end
