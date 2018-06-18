@@ -164,7 +164,7 @@ module Bright
           when "student_id"
             filter << "identifier='#{v}'"
           when "last_modified"
-            filter << "dateLastModified>'#{v}'"
+            filter << "dateLastModified>='#{v}'"
           else
             default_params[k] = v
           end
