@@ -234,18 +234,6 @@ module Bright
             :email_address => user_params["email"]
           }
         end
-        unless demographics_params["birthdate"].blank?
-          student_data_hsh[:birth_date] = Date.parse(demographics_params["birthdate"]).to_s
-        end
-        unless demographics_params["sex"].to_s[0].blank?
-          student_data_hsh[:gender] = demographics_params["sex"].to_s[0].upcase
-        end
-        DEMOGRAPHICS_CONVERSION.each do |demographics_key, demographics_value|
-          if demographics_params[demographics_key] == "true"
-            student_data_hsh[:race] ||= []
-            student_data_hsh[:race] << demographics_value
-          end
-        end
         unless user_params["orgs"].blank?
           if (s = user_params["orgs"].detect{|org| org["href"] =~ /\/schools\//})
             self.schools_cache ||= {}
@@ -257,7 +245,31 @@ module Bright
           student_data_hsh[:school] = attending_school
         end
 
+        student_data_hsh.merge!(get_demographic_information(student_data_hsh[:api_id]))
+
         return student_data_hsh
+      end
+
+      def get_demographic_information(api_id)
+        demographic_hsh = {}
+        demographics_params = self.request(:get, "demographics/#{api_id}")["demographics"]
+        unless demographics_params["birthdate"].blank?
+          demographic_hsh[:birth_date] = Date.parse(demographics_params["birthdate"]).to_s
+        end
+        unless demographics_params["sex"].to_s[0].blank?
+          demographic_hsh[:gender] = demographics_params["sex"].to_s[0].upcase
+        end
+        DEMOGRAPHICS_CONVERSION.each do |demographics_key, demographics_value|
+          if demographics_params[demographics_key] == "true"
+            if demographics_value == "Hispanic Or Latino"
+              demographic_hsh[:hispanic_ethnicity] = true
+            else
+              demographic_hsh[:race] ||= []
+              demographic_hsh[:race] << demographics_value
+            end
+          end
+        end
+        return demographic_hsh
       end
 
     end
