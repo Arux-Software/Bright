@@ -10,6 +10,8 @@ require "bright/phone_number"
 require "bright/email_address"
 require "bright/enrollment"
 require "bright/school"
+require "bright/contact"
+
 
 require "bright/connection"
 require "bright/response_collection"

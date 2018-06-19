@@ -114,9 +114,9 @@ module Bright
         end
       end
 
-      def get_contact_by_api_id(api_id)
+      def get_contact_by_api_id(api_id, params ={})
         contact_hsh = self.request(:get, "users/#{api_id}", params)
-        Contact.new(convert_to_user_data(st_hsh["user"])) if contact_hsh and contact_hsh["user"]
+        Contact.new(convert_to_user_data(contact_hsh["user"])) if contact_hsh and contact_hsh["user"]
       end
 
       def request(method, path, params = {})
@@ -215,22 +215,23 @@ module Bright
 
       def convert_to_user_data(user_params)
         return {} if user_params.blank?
-        demographics_params = self.request(:get, "demographics/#{user_params["sourcedId"]}")["demographics"]
-        student_data_hsh = {
+        user_data_hsh = {
           :api_id => user_params["sourcedId"],
           :first_name => user_params["givenName"],
           :middle_name => user_params["middleName"],
           :last_name => user_params["familyName"],
-          :sis_student_id => user_params["identifier"],
           :last_modified => user_params["dateLastModified"]
         }
+        unless user_params["identifier"].blank?
+          user_data_hsh[:sis_student_id] = user_params["identifier"]
+        end
         unless user_params["userIds"].blank?
           if (state_id_hsh = user_params["userIds"].detect{|user_id_hsh| user_id_hsh["type"] == "stateID"})
-            student_data_hsh[:state_student_id] = state_id_hsh["identifier"]
+            user_data_hsh[:state_student_id] = state_id_hsh["identifier"]
           end
         end
         unless user_params["email"].blank?
-          student_data_hsh[:email_address] = {
+          user_data_hsh[:email_address] = {
             :email_address => user_params["email"]
           }
         end
@@ -242,12 +243,18 @@ module Bright
               self.schools_cache[s["sourcedId"]] = attending_school
             end
           end
-          student_data_hsh[:school] = attending_school
+          if attending_school
+            user_data_hsh[:school] = attending_school
+          end
+        end
+        unless user_params["phone"].blank?
+          user_data_hsh[:phone_numbers] = [{:phone_number => user_params["phone"]}]
         end
 
-        student_data_hsh.merge!(get_demographic_information(student_data_hsh[:api_id]))
+        #add the demographic information
+        user_data_hsh.merge!(get_demographic_information(user_data_hsh[:api_id]))
 
-        return student_data_hsh
+        return user_data_hsh
       end
 
       def get_demographic_information(api_id)
