@@ -12,7 +12,7 @@ module Bright
       @attribute_names
     end
 
-    attr_accessor :student, :phone_numbers, :addresses, :email_address
+    attr_accessor :phone_numbers, :addresses, :email_address
 
     def phone_numbers=(array)
       if array.size <= 0 or array.first.is_a?(PhoneNumber)

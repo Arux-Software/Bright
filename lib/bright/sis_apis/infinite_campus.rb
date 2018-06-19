@@ -221,7 +221,7 @@ module Bright
           :middle_name => user_params["middleName"],
           :last_name => user_params["familyName"],
           :last_modified => user_params["dateLastModified"]
-        }
+        }.reject{|k,v| v.blank?}
         unless user_params["identifier"].blank?
           user_data_hsh[:sis_student_id] = user_params["identifier"]
         end
@@ -253,6 +253,11 @@ module Bright
 
         #add the demographic information
         user_data_hsh.merge!(get_demographic_information(user_data_hsh[:api_id]))
+
+        #if you're a student, build the contacts too
+        if user_params["role"] == "student" and !user_params["agents"].blank?
+          user_data_hsh[:contacts] = user_params["agents"].map{ |agent_hsh| self.get_contact_by_api_id(agent_hsh["sourcedId"]) }
+        end
 
         return user_data_hsh
       end

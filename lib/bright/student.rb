@@ -14,7 +14,7 @@ module Bright
     end
 
     # TODO:: map contact info (addresses, email, phone, etc)
-    attr_accessor :enrollment, :addresses, :email_address, :phone_numbers, :school
+    attr_accessor :enrollment, :addresses, :email_address, :phone_numbers, :school, :contacts
 
     def initialize(*args)
       super
@@ -77,6 +77,19 @@ module Bright
         @school = School.new(school_val)
       end
       @school
+    end
+
+    def contacts=(array)
+      if array.size <= 0 or array.first.is_a?(Contact)
+        @contacts = array
+      elsif array.first.is_a?(Hash)
+        @contacts = array.collect{|a| Contact.new(a)}
+      end
+      @contacts ||= []
+    end
+
+    def contacts
+      @contacts ||= []
     end
 
   end
