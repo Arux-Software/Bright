@@ -91,7 +91,7 @@ module Bright
           :projected_graduation_year => student_params["GradYr"],
           :gender => student_params["Gender"],
           :hispanic_ethnicity => student_params["HispanicLatinoEthnicity"]
-        }
+        }.reject{|k,v| v.blank?}
         unless student_params["DateOfBirth"].blank?
           student_data_hsh[:birth_date] = Date.parse(student_params["DateOfBirth"]).to_s
         end
