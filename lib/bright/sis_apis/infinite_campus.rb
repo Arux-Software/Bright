@@ -240,7 +240,7 @@ module Bright
             self.schools_cache ||= {}
             if (attending_school = self.schools_cache[s["sourcedId"]]).nil?
               attending_school = self.get_school_by_api_id(s["sourcedId"])
-              self.schools_cache[s["sourcedId"]] = attending_school
+              self.schools_cache[attending_school.api_id] = attending_school
             end
           end
           if attending_school
