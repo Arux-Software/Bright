@@ -6,7 +6,7 @@ module Bright
       @@doc_url = "https://esdemo1.skyward.com/api/swagger/ui/index"
       @@api_version = "v1"
 
-      attr_accessor :connection_options
+      attr_accessor :connection_options, :schools_cache
 
       DEMOGRAPHICS_CONVERSION = {
         "I"=>"American Indian Or Alaska Native",
@@ -26,13 +26,63 @@ module Bright
       end
 
       def get_student_by_api_id(api_id, params = {})
-        st_hsh = self.request(:get, "v1/students/#{api_id}", params)
+        st_hsh = self.request(:get, "v1/students/#{api_id}", params)[:parsed_body]
         Student.new(convert_to_student_data(st_hsh)) unless st_hsh.blank?
       end
 
+      def get_students(params = {}, options = {})
+        params["paging.limit"] = params[:limit] || options[:limit] || 1000
+        students_response = self.request(:get, 'v1/students', params)
+        if !students_response[:parsed_body].blank?
+          students = students_response[:parsed_body].compact.collect {|st_hsh|
+            Student.new(convert_to_student_data(st_hsh))
+          }
+        end
+
+        next_cursor = nil
+        if students_response[:headers]["Link"]
+          students_response[:headers]["Link"].split(",").each do |part, index|
+            section = part.split(';')
+            url = section[0][/<(.*)>/,1]
+            name = section[1][/rel="(.*)"/,1].to_s
+            if name == "next"
+              next_cursor = CGI.parse(URI.parse(url).query)["cursor"].first
+            end
+          end
+        end
+        if options[:wrap_in_collection] != false
+          api = self
+          load_more_call = proc {|cursor|
+            params["paging.cursor"] = cursor
+            options = {:wrap_in_collection => false, :include_cursor => true}
+            api.get_students(params, options)
+          }
+          CursorResponseCollection.new({
+            :seed_page => students,
+            :load_more_call => load_more_call,
+            :next_cursor => next_cursor
+          })
+        elsif options[:include_cursor] == true
+          return {:objects => students, :next_cursor => next_cursor}
+        else
+          return students
+        end
+      end
+
       def get_school_by_api_id(api_id, params = {})
-        sc_hsh = self.request(:get, "v1/schools/#{api_id}", params)
+        sc_hsh = self.request(:get, "v1/schools/#{api_id}", params)[:parsed_body]
         School.new(convert_to_school_data(sc_hsh)) unless sc_hsh.blank?
+      end
+
+      def get_schools(params = {}, options = {})
+        params["paging.limit"] = params[:limit] || options[:limit] || 10000
+        schools_hshs = self.request(:get, "v1/schools", params)[:parsed_body]
+        if !schools_hshs.blank?
+          schools = schools_hshs.compact.collect {|sc_hsh|
+            School.new(convert_to_school_data(sc_hsh))
+          }
+        end
+        return schools
       end
 
       def retrive_access_token
@@ -73,7 +123,7 @@ module Bright
           puts "#{response.inspect}"
           puts "#{response.body}"
         end
-        response_hash
+        return {:parsed_body => response_hash, :headers => response.headers}
       end
 
       protected
@@ -110,7 +160,12 @@ module Bright
         end
 
         unless student_params["DefaultSchoolId"].blank?
-          student_data_hsh[:school] = self.get_school_by_api_id(student_params["DefaultSchoolId"])
+          self.schools_cache ||= {}
+          if (attending_school = self.schools_cache[student_params["DefaultSchoolId"]]).nil?
+            attending_school = self.get_school_by_api_id(student_params["DefaultSchoolId"])
+            self.schools_cache[attending_school.api_id] = attending_school
+          end
+          student_data_hsh[:school] = attending_school
         end
 
         return student_data_hsh

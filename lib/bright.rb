@@ -13,6 +13,7 @@ require "bright/school"
 
 require "bright/connection"
 require "bright/response_collection"
+require "bright/cursor_response_collection"
 
 require "bright/sis_apis/base.rb"
 require "bright/sis_apis/tsis.rb"
