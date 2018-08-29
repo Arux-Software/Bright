@@ -108,7 +108,6 @@ module Bright
         else
           body = JSON.dump(params)
         end
-        puts uri.inspect
         headers = self.headers_for_auth(uri)
 
         connection = Bright::Connection.new(uri)
