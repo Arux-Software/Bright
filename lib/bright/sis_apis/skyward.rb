@@ -97,6 +97,20 @@ module Bright
         Contact.new(convert_to_user_data(contact_hsh, {:type => "Contact"})) unless contact_hsh.blank?
       end
 
+      def get_guardians_by_api_id(api_id, params = {})
+        guardians = []
+        guardians_array = self.request(:get, "v1/guardians", params.merge({"studentNameId" => api_id}))[:parsed_body]
+        if !guardians_array.blank?
+          guardians_array.each do |guardian_hsh|
+            relationship_type = guardian_hsh.delete("Students").detect{|s_hsh| s_hsh["StudentNameId"].to_s == api_id.to_s}["RelationshipDesc"]
+            guardian_hsh["RelationshipType"] = relationship_type
+            guardian_hsh["NameId"] = guardian_hsh.delete("GuardianNameId")
+            guardians << Contact.new(convert_to_user_data(guardian_hsh, {:type => "Contact"}))
+          end
+        end
+        return guardians
+      end
+
       def retrive_access_token
         connection = Bright::Connection.new("#{self.connection_options[:uri]}/token")
         response = connection.request(:post,
@@ -153,7 +167,8 @@ module Bright
           :state_student_id => user_params["StateId"],
           :projected_graduation_year => user_params["GradYr"],
           :gender => user_params["Gender"],
-          :hispanic_ethnicity => user_params["HispanicLatinoEthnicity"]
+          :hispanic_ethnicity => user_params["HispanicLatinoEthnicity"],
+          :relationship_type => user_params["RelationshipType"]
         }.reject{|k,v| v.blank?}
         unless user_params["DateOfBirth"].blank?
           user_data_hsh[:birth_date] = Date.parse(user_params["DateOfBirth"]).to_s
@@ -204,6 +219,11 @@ module Bright
               :type => PHONE_TYPE_CONVERSION[user_params["#{phone_param}Type"]]
             }
           end
+        end
+
+        if options[:type] == "Student"
+          #generate the contacts for a student
+          user_data_hsh[:contacts] = self.get_guardians_by_api_id(user_data_hsh[:api_id])
         end
 
         return user_data_hsh
