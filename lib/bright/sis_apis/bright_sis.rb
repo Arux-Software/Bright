@@ -164,7 +164,7 @@ module Bright
           :image => student_params["picture"],
           :hispanic_ethnicity => student_params["hispanic_latino"],
           :last_modified => student_params["updated_at"]
-        }
+        }.reject{|k,v| v.blank?}
         unless student_params["birthdate"].blank?
           student_data_hsh[:birth_date] = Date.parse(student_params["birthdate"]).to_s
         end
@@ -194,6 +194,48 @@ module Bright
 
         unless student_params["school"].blank?
           student_data_hsh[:school] = convert_to_school_data(student_params["school"])
+        end
+
+        unless student_params["contact_first_name"].blank?
+          contact_data_hsh = {
+            :api_id => student_params["contact_uuid"],
+            :first_name => student_params["contact_first_name"],
+            :middle_name => student_params["contact_middle_name"],
+            :last_name => student_params["contact_last_name"],
+            :relationship_type => student_params["contact_relationship"],
+            :sis_student_id => student_params["contact_sis_id"],
+            :image => student_params["contact_picture"],
+            :last_modified => student_params["updated_at"]
+          }.reject{|k,v| v.blank?}
+
+          if student_params["contact_lives_with"].to_bool and !student_params["student_street"].blank?
+            contact_data_hsh[:addresses] = [{
+              :street => student_params["student_street"],
+              :apt => student_params["student_street_line_2"],
+              :city => student_params["student_city"],
+              :state => student_params["student_state"],
+              :postal_code => student_params["student_zip"]
+            }]
+          end
+
+          contact_phones = []
+          ["", "_2", "_3"].each do |index|
+            unless student_params["contact_phone" + index].blank?
+              contact_phones << {
+                :phone_number => student_params["contact_phone" + index],
+                :type => student_params["contact_phone_type" + index]
+              }
+            end
+          end
+          contact_data_hsh[:phone_numbers] = contact_phones
+
+          unless student_params["contact_email"].blank?
+            contact_data_hsh[:email_address] = {
+              :email_address => student_params["contact_email"]
+            }
+          end
+
+          student_data_hsh[:contacts] = [contact_data_hsh]
         end
 
         return student_data_hsh
