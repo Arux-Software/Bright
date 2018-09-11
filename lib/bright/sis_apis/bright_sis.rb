@@ -148,7 +148,6 @@ module Bright
 
       def convert_to_student_data(student_params)
         return {} if student_params.nil?
-
         student_data_hsh = {
           :api_id => student_params["uuid"],
           :first_name => student_params["first_name"],
@@ -176,19 +175,21 @@ module Bright
           end
         end
 
-        unless student_params["student_street"].blank?
-          student_data_hsh[:addresses] = [{
-            :street => student_params["student_street"],
-            :apt => student_params["student_street_line_2"],
-            :city => student_params["student_city"],
-            :state => student_params["student_state"],
-            :postal_code => student_params["student_zip"]
-          }]
+        unless student_params["addresses"].blank?
+          student_data_hsh[:addresses] = student_params["addresses"].collect do |address_params|
+            convert_to_address_data(address_params)
+          end
         end
 
-        unless student_params["student_email"].blank?
+        unless student_params["phone_numbers"].blank?
+          student_data_hsh[:phone_numbers] = student_params["phone_numbers"].collect do |phone_params|
+            convert_to_phone_number_data(phone_params)
+          end
+        end
+
+        unless student_params["email_addresses"].blank?
           student_data_hsh[:email_address] = {
-            :email_address => student_params["student_email"]
+            :email_address => student_params["email_addresses"].first["email_address"]
           }
         end
 
@@ -196,46 +197,34 @@ module Bright
           student_data_hsh[:school] = convert_to_school_data(student_params["school"])
         end
 
-        unless student_params["contact_first_name"].blank?
-          contact_data_hsh = {
-            :api_id => student_params["contact_uuid"],
-            :first_name => student_params["contact_first_name"],
-            :middle_name => student_params["contact_middle_name"],
-            :last_name => student_params["contact_last_name"],
-            :relationship_type => student_params["contact_relationship"],
-            :sis_student_id => student_params["contact_sis_id"],
-            :image => student_params["contact_picture"],
-            :last_modified => student_params["updated_at"]
-          }.reject{|k,v| v.blank?}
-
-          if student_params["contact_lives_with"].to_bool and !student_params["student_street"].blank?
-            contact_data_hsh[:addresses] = [{
-              :street => student_params["student_street"],
-              :apt => student_params["student_street_line_2"],
-              :city => student_params["student_city"],
-              :state => student_params["student_state"],
-              :postal_code => student_params["student_zip"]
-            }]
-          end
-
-          contact_phones = []
-          ["", "_2", "_3"].each do |index|
-            unless student_params["contact_phone" + index].blank?
-              contact_phones << {
-                :phone_number => student_params["contact_phone" + index],
-                :type => student_params["contact_phone_type" + index]
+        unless student_params["contacts"].blank?
+          student_data_hsh[:contacts] = student_params["contacts"].collect do |contact_params|
+            contact_data_hsh = {
+              :api_id => contact_params["uuid"],
+              :first_name => contact_params["first_name"],
+              :middle_name => contact_params["middle_name"],
+              :last_name => contact_params["last_name"],
+              :relationship_type => contact_params["relationship"],
+              :sis_student_id => contact_params["sis_id"],
+              :last_modified => contact_params["updated_at"]
+            }
+            unless contact_params["addresses"].blank?
+              contact_data_hsh[:addresses] = contact_params["addresses"].collect do |address_params|
+                convert_to_address_data(address_params)
+              end
+            end
+            unless contact_params["phone_numbers"].blank?
+              contact_data_hsh[:phone_numbers] = contact_params["phone_numbers"].collect do |phone_params|
+                convert_to_phone_number_data(phone_params)
+              end
+            end
+            unless contact_params["email_addresses"].blank?
+              contact_data_hsh[:email_address] = {
+                :email_address => contact_params["email_addresses"].first["email_address"]
               }
             end
+            contact_data_hsh.reject{|k,v| v.blank?}
           end
-          contact_data_hsh[:phone_numbers] = contact_phones
-
-          unless student_params["contact_email"].blank?
-            contact_data_hsh[:email_address] = {
-              :email_address => student_params["contact_email"]
-            }
-          end
-
-          student_data_hsh[:contacts] = [contact_data_hsh]
         end
 
         return student_data_hsh
@@ -252,6 +241,28 @@ module Bright
           end
         end
         return filter_params
+      end
+
+      def convert_to_phone_number_data(phone_number_params)
+        return {} if phone_number_params.nil?
+        {
+          :phone_number => phone_number_params["phone_number"],
+          :type => phone_number_params["phone_type"]
+        }.reject{|k,v| v.blank?}
+      end
+
+      def convert_to_address_data(address_params)
+        return {} if address_params.nil?
+        {
+          :street => address_params["street"],
+          :apt => address_params["street_line_2"],
+          :city => address_params["city"],
+          :state => address_params["state"],
+          :postal_code => address_params["zip"],
+          :lattitude => address_params["latitude"],
+          :longitude => address_params["longitude"],
+          :type => address_params["address_type"]
+        }.reject{|k,v| v.blank?}
       end
 
       def convert_to_school_data(school_params)
