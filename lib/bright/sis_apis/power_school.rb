@@ -3,34 +3,34 @@ module Bright
     class PowerSchool < Base
       DATE_FORMAT = '%Y-%m-%d'
       INVALID_SEARCH_CHAR_RE = /[\,\;]/
-      
+
       @@description = "Connects to the PowerSchool API for accessing student information"
       @@doc_url = "http://psimages.sunnysideschools.org/api-developer-guide-1.6.0/"
       @@api_version = "1.6.0"
-      
+
       attr_accessor :connection_options, :expansion_options
-      
+
       def initialize(options = {})
         self.connection_options = options[:connection] || {}
         self.expansion_options = options[:expansion] || {}
         # {
-        #   :client_id => "", 
+        #   :client_id => "",
         #   :client_secret => "",
         #   :uri => ""
         #   :access_token => "", #optional
         # }
       end
-      
+
       def get_student_by_api_id(api_id, params = {})
         params = self.apply_expansions(params)
         st_hsh = self.request(:get, "ws/v1/student/#{api_id}", params)
         Student.new(convert_to_student_data(st_hsh["student"])) if st_hsh and st_hsh["student"]
       end
-      
+
       def get_student(params = {}, options = {})
         self.get_students(params, options.merge(:per_page => 1, :wrap_in_collection => false)).first
       end
-      
+
       def get_students(params = {}, options = {})
         params = self.apply_expansions(params)
         params = self.apply_options(params, options)
@@ -44,11 +44,11 @@ module Bright
         students_response_hash = self.request(:get, 'ws/v1/district/student', self.map_student_search_params(params))
         if students_response_hash and students_response_hash["students"] && students_response_hash["students"]["student"]
           students_hash = [students_response_hash["students"]["student"]].flatten
-        
+
           students = students_hash.compact.collect {|st_hsh|
             Student.new(convert_to_student_data(st_hsh))
           }
-        
+
           if options[:wrap_in_collection] != false
             api = self
             load_more_call = proc { |page|
@@ -57,9 +57,9 @@ module Bright
             }
 
             ResponseCollection.new({
-              :seed_page => students, 
+              :seed_page => students,
               :total => total_results,
-              :per_page => params[:pagesize], 
+              :per_page => params[:pagesize],
               :load_more_call => load_more_call
             })
           else
@@ -69,7 +69,7 @@ module Bright
           []
         end
       end
-      
+
       def create_student(student, additional_params = {})
         response = self.request(:post, 'ws/v1/student', self.convert_from_student_data(student, "INSERT", additional_params))
         if response["results"] and response["results"]["insert_count"] == 1
@@ -87,7 +87,7 @@ module Bright
         end
         student
       end
-      
+
       def update_student(student, additional_params = {})
         response = self.request(:post, 'ws/v1/student', self.convert_from_student_data(student, "UPDATE", additional_params))
         if response["results"] and response["results"]["update_count"] == 1
@@ -98,11 +98,11 @@ module Bright
           student
         end
       end
-      
+
       def subscribe_student(student)
         raise NotImplementedError
       end
-      
+
       def get_schools(params = {}, options = {})
         params = self.apply_options(params, options)
 
@@ -115,11 +115,11 @@ module Bright
         schools_response_hash = self.request(:get, 'ws/v1/district/school', params)
         puts schools_response_hash.inspect
         schools_hsh = [schools_response_hash["schools"]["school"]].flatten
-        
+
         schools = schools_hsh.compact.collect {|st_hsh|
           School.new(convert_to_school_data(st_hsh))
         }
-        
+
         if options[:wrap_in_collection] != false
           api = self
           load_more_call = proc { |page|
@@ -128,16 +128,16 @@ module Bright
           }
 
           ResponseCollection.new({
-            :seed_page => schools, 
+            :seed_page => schools,
             :total => total_results,
-            :per_page => params[:pagesize], 
+            :per_page => params[:pagesize],
             :load_more_call => load_more_call
           })
         else
           schools
         end
       end
-      
+
       def retrive_access_token
         connection = Bright::Connection.new("#{self.connection_options[:uri]}/oauth/access_token/")
         response = connection.request(:post, "grant_type=client_credentials", self.headers_for_access_token)
@@ -149,7 +149,7 @@ module Bright
         end
         response_hash
       end
-      
+
       def request(method, path, params = {})
         uri  = "#{self.connection_options[:uri]}/#{path}"
         body = nil
@@ -159,12 +159,12 @@ module Bright
         else
           body = JSON.dump(params)
         end
-        
+
         headers = self.headers_for_auth
 
         connection = Bright::Connection.new(uri)
         response = connection.request(method, body, headers)
-        
+
         if !response.error?
           response_hash = JSON.parse(response.body)
         else
@@ -173,13 +173,13 @@ module Bright
         end
         response_hash
       end
-      
+
       protected
-      
+
       def map_student_search_params(params)
         params = params.dup
         default_params = {}
-        
+
         q = ""
         %w(first_name middle_name last_name).each do |f|
           if fn = params.delete(f.to_sym)
@@ -199,23 +199,23 @@ module Bright
 
         default_params.merge(params).reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
-      
+
       def convert_to_student_data(attrs)
         cattrs = {}
-        
+
         if attrs["name"]
           cattrs[:first_name]  = attrs["name"]["first_name"]
           cattrs[:middle_name] = attrs["name"]["middle_name"]
           cattrs[:last_name]  = attrs["name"]["last_name"]
         end
-        
+
         cattrs[:api_id] = attrs["id"].to_s
         cattrs[:sis_student_id] = attrs["local_id"].to_s
         cattrs[:state_student_id]   = attrs["state_province_id"].to_s
-        
+
         if attrs["demographics"]
           if attrs["demographics"]["birth_date"]
-            begin 
+            begin
               cattrs[:birth_date] = Date.strptime(attrs["demographics"]["birth_date"], DATE_FORMAT)
             rescue => e
               puts "#{e.inspect} #{bd}"
@@ -227,17 +227,17 @@ module Bright
           pg = attrs["demographics"]["projected_graduation_year"].to_i
           cattrs[:projected_graduation_year] = pg if pg > 0
         end
-        
+
         begin
         cattrs[:addresses] = attrs["addresses"].to_a.collect{|a| self.convert_to_address_data(a)} if attrs["addresses"]
       rescue
       end
         cattrs.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
-      
+
       def convert_from_student_data(student, action = nil, additional_params = {})
         return {} if student.nil?
-        
+
         student_data = {
           :client_uid => student.client_id,
           :action => action,
@@ -245,7 +245,7 @@ module Bright
           :local_id => student.sis_student_id,
           :state_province_id => student.state_student_id,
           :name => {
-            :first_name => student.first_name,  
+            :first_name => student.first_name,
             :middle_name => student.middle_name,
             :last_name => student.last_name
           }.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?},
@@ -255,12 +255,12 @@ module Bright
             :projected_graduation_year => student.projected_graduation_year
           }.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
         }.merge(additional_params).reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
-        
+
         # apply enrollment info
         if student.enrollment
-          student_data.merge!(self.convert_from_enrollment_data(student.enrollment)) 
+          student_data.merge!(self.convert_from_enrollment_data(student.enrollment))
         end
-        
+
         # apply addresses
         address_data = {}
         if ph = student.addresses.detect{|a| a.type == "physical"}
@@ -275,12 +275,12 @@ module Bright
           address_data.merge!(self.convert_from_address_data(cany))
         end
         if address_data.size > 0
-          student_data.merge!({:addresses => address_data}) 
+          student_data.merge!({:addresses => address_data})
         end
-        
+
         {:students => {:student => student_data}}
       end
-      
+
       def convert_from_enrollment_data(enrollment)
         return {} if enrollment.nil?
         {:school_enrollment => {
@@ -294,17 +294,17 @@ module Bright
           }.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
         }
       end
-      
+
       def convert_to_school_data(attrs)
         cattrs = {}
-        
+
         cattrs[:api_id] = attrs["id"]
         cattrs[:name] = attrs["name"]
         cattrs[:number] = attrs["school_number"]
-        
+
         cattrs.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
-      
+
       def convert_from_address_data(address)
         {
           (address.type || "physcial") => {
@@ -316,10 +316,10 @@ module Bright
           }.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
         }
       end
-      
+
       def convert_to_address_data(attrs)
         cattrs = {}
-        
+
         if attrs.is_a?(Array)
           if attrs.first.is_a?(String)
             cattrs[:type] = attrs.first
@@ -337,12 +337,12 @@ module Bright
         cattrs[:state] = attrs["state_province"]
         cattrs[:postal_code] = attrs["postal_code"]
         if attrs["grid_location"] and lat_lng = attrs["grid_location"].split(/,\s?/)
-          cattrs[:lattitude], cattrs[:longitude] = lat_lng
+          cattrs[:latitude], cattrs[:longitude] = lat_lng
         end
-        
+
         cattrs.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
-      
+
       def apply_expansions(params)
         if self.expansion_options.empty?
           hsh = self.request(:get, 'ws/v1/district/student', {:pagesize => 1, :q => "local_id==0"})
@@ -359,20 +359,20 @@ module Bright
           :extensions => (%w(studentcorefields) & (self.expansion_options[:extensions] || [])).join(",")
         }.reject{|k,v| v.empty?})
       end
-      
+
       def apply_options(params, options)
         options[:per_page] = params[:pagesize] ||= params.delete(:per_page) || options[:per_page] || 100
         params[:page] ||= options[:page] || 1
         params
       end
-      
+
       def headers_for_access_token
         {
           "Authorization" => "Basic #{Base64.strict_encode64("#{self.connection_options[:client_id]}:#{self.connection_options[:client_secret]}")}",
           "Content-Type" => "application/x-www-form-urlencoded;charset=UTF-8"
         }
       end
-      
+
       def headers_for_auth
         self.retrive_access_token if self.connection_options[:access_token].nil?
         {
