@@ -2,6 +2,7 @@ require "bright/version"
 require "bright/errors"
 
 require "bright/helpers/blank_helper.rb"
+require "bright/helpers/boolean_parser_helper.rb"
 
 require "bright/model"
 require "bright/student"
@@ -10,6 +11,8 @@ require "bright/phone_number"
 require "bright/email_address"
 require "bright/enrollment"
 require "bright/school"
+require "bright/contact"
+
 
 require "bright/connection"
 require "bright/response_collection"

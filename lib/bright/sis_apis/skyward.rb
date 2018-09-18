@@ -16,6 +16,13 @@ module Bright
         "W"=>"White"
       }
 
+      PHONE_TYPE_CONVERSION = {
+        "Cellular" => "Cell",
+        "Work" => "Work",
+        "Home" => "Home",
+        "Other" => "Other"
+      }
+
       def initialize(options = {})
         self.connection_options = options[:connection] || {}
         # {
@@ -27,7 +34,7 @@ module Bright
 
       def get_student_by_api_id(api_id, params = {})
         st_hsh = self.request(:get, "v1/students/#{api_id}", params)[:parsed_body]
-        Student.new(convert_to_student_data(st_hsh)) unless st_hsh.blank?
+        Student.new(convert_to_user_data(st_hsh, {:type => "Student"})) unless st_hsh.blank?
       end
 
       def get_students(params = {}, options = {})
@@ -35,7 +42,7 @@ module Bright
         students_response = self.request(:get, 'v1/students', params)
         if !students_response[:parsed_body].blank?
           students = students_response[:parsed_body].compact.collect {|st_hsh|
-            Student.new(convert_to_student_data(st_hsh))
+            Student.new(convert_to_user_data(st_hsh, {:type => "Student"}))
           }
         end
 
@@ -85,6 +92,25 @@ module Bright
         return schools
       end
 
+      def get_contact_by_api_id(api_id, params = {})
+        contact_hsh = self.request(:get, "v1/names/#{api_id}", params)[:parsed_body]
+        Contact.new(convert_to_user_data(contact_hsh, {:type => "Contact"})) unless contact_hsh.blank?
+      end
+
+      def get_guardians_by_api_id(api_id, params = {})
+        guardians = []
+        guardians_array = self.request(:get, "v1/guardians", params.merge({"studentNameId" => api_id}))[:parsed_body]
+        if !guardians_array.blank?
+          guardians_array.each do |guardian_hsh|
+            relationship_type = guardian_hsh.delete("Students").detect{|s_hsh| s_hsh["StudentNameId"].to_s == api_id.to_s}["RelationshipDesc"]
+            guardian_hsh["RelationshipType"] = relationship_type
+            guardian_hsh["NameId"] = guardian_hsh.delete("GuardianNameId")
+            guardians << Contact.new(convert_to_user_data(guardian_hsh, {:type => "Contact"}))
+          end
+        end
+        return guardians
+      end
+
       def retrive_access_token
         connection = Bright::Connection.new("#{self.connection_options[:uri]}/token")
         response = connection.request(:post,
@@ -128,47 +154,79 @@ module Bright
 
       protected
 
-      def convert_to_student_data(student_params)
-        return {} if student_params.nil?
+      def convert_to_user_data(user_params, options = {})
+        # :type => "Contact" || "Student"
+        return {} if user_params.blank?
 
-        student_data_hsh = {
-          :api_id => student_params["NameId"],
-          :first_name => student_params["FirstName"],
-          :middle_name => student_params["MiddleName"],
-          :last_name => student_params["LastName"],
-          :sis_student_id => student_params["DisplayId"],
-          :state_student_id => student_params["StateId"],
-          :projected_graduation_year => student_params["GradYr"],
-          :gender => student_params["Gender"],
-          :hispanic_ethnicity => student_params["HispanicLatinoEthnicity"]
-        }
-        unless student_params["DateOfBirth"].blank?
-          student_data_hsh[:birth_date] = Date.parse(student_params["DateOfBirth"]).to_s
+        user_data_hsh = {
+          :api_id => user_params["NameId"],
+          :first_name => user_params["FirstName"],
+          :middle_name => user_params["MiddleName"],
+          :last_name => user_params["LastName"],
+          :sis_student_id => user_params["DisplayId"],
+          :state_student_id => user_params["StateId"],
+          :projected_graduation_year => user_params["GradYr"],
+          :gender => user_params["Gender"],
+          :hispanic_ethnicity => user_params["HispanicLatinoEthnicity"],
+          :relationship_type => user_params["RelationshipType"]
+        }.reject{|k,v| v.blank?}
+        unless user_params["DateOfBirth"].blank?
+          user_data_hsh[:birth_date] = Date.parse(user_params["DateOfBirth"]).to_s
         end
 
         DEMOGRAPHICS_CONVERSION.each do |demographics_key, demographics_value|
-          if student_params["FederalRace"].to_s.upcase.include?(demographics_key)
-            student_data_hsh[:race] ||= []
-            student_data_hsh[:race] << demographics_value
+          if user_params["FederalRace"].to_s.upcase.include?(demographics_key)
+            user_data_hsh[:race] ||= []
+            user_data_hsh[:race] << demographics_value
           end
         end
 
-        unless student_params["SchoolEmail"].blank?
-          student_data_hsh[:email_address] = {
-            :email_address => student_params["SchoolEmail"]
+        unless user_params["SchoolEmail"].blank?
+          user_data_hsh[:email_address] = {
+            :email_address => user_params["SchoolEmail"]
           }
         end
 
-        unless student_params["DefaultSchoolId"].blank?
-          self.schools_cache ||= {}
-          if (attending_school = self.schools_cache[student_params["DefaultSchoolId"]]).nil?
-            attending_school = self.get_school_by_api_id(student_params["DefaultSchoolId"])
-            self.schools_cache[attending_school.api_id] = attending_school
-          end
-          student_data_hsh[:school] = attending_school
+        unless user_params["Email"].blank?
+          user_data_hsh[:email_address] = {
+            :email_address => user_params["Email"]
+          }
         end
 
-        return student_data_hsh
+        unless user_params["DefaultSchoolId"].blank?
+          self.schools_cache ||= {}
+          if (attending_school = self.schools_cache[user_params["DefaultSchoolId"]]).nil?
+            attending_school = self.get_school_by_api_id(user_params["DefaultSchoolId"])
+            self.schools_cache[attending_school.api_id] = attending_school
+          end
+          user_data_hsh[:school] = attending_school
+        end
+
+        unless user_params["StreetAddress"].blank?
+          user_data_hsh[:addresses] = [{
+            :street => user_params["StreetAddress"],
+            :city => user_params["City"],
+            :state => user_params["State"],
+            :postal_code => user_params["ZipCode"]
+          }]
+        end
+
+        ["PhoneNumber", "PhoneNumber2", "PhoneNumber3"].each do |phone_param|
+          if !user_params[phone_param].blank?
+            user_data_hsh[:phone_numbers] ||= []
+            user_data_hsh[:phone_numbers] << {
+              :phone_number => user_params[phone_param],
+              :type => PHONE_TYPE_CONVERSION[user_params["#{phone_param}Type"]]
+            }
+          end
+        end
+
+        if options[:type] == "Student"
+          #generate the contacts for a student
+          user_data_hsh[:contacts] = self.get_guardians_by_api_id(user_data_hsh[:api_id])
+        end
+
+        return user_data_hsh
       end
 
       def convert_to_school_data(school_params)

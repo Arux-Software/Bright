@@ -31,7 +31,7 @@ module Bright
       def get_student_by_api_id(api_id, params = {})
         params = {:role => "student"}.merge(params)
         st_hsh = self.request(:get, "users/#{api_id}", params)
-        Student.new(convert_to_student_data(st_hsh["user"])) if st_hsh and st_hsh["user"]
+        Student.new(convert_to_user_data(st_hsh["user"])) if st_hsh and st_hsh["user"]
       end
 
       def get_student(params = {}, options = {})
@@ -41,13 +41,13 @@ module Bright
       def get_students(params = {}, options = {})
         params = {:role => "student"}.merge(params)
         params[:limit] = params[:limit] || options[:limit] || 100
-        students_response_hash = self.request(:get, 'users', self.map_student_search_params(params))
+        students_response_hash = self.request(:get, 'users', self.map_search_params(params))
         total_results = students_response_hash[:response_headers]["x-total-count"].to_i
         if students_response_hash and students_response_hash["users"]
           students_hash = [students_response_hash["users"]].flatten
 
           students = students_hash.compact.collect {|st_hsh|
-            Student.new(convert_to_student_data(st_hsh))
+            Student.new(convert_to_user_data(st_hsh))
           }
         end
         if options[:wrap_in_collection] != false
@@ -114,6 +114,11 @@ module Bright
         end
       end
 
+      def get_contact_by_api_id(api_id, params ={})
+        contact_hsh = self.request(:get, "users/#{api_id}", params)
+        Contact.new(convert_to_user_data(contact_hsh["user"])) if contact_hsh and contact_hsh["user"]
+      end
+
       def request(method, path, params = {})
         uri  = "#{self.connection_options[:uri]}/#{path}"
         body = nil
@@ -148,7 +153,7 @@ module Bright
         {"Authorization" => consumer.create_signed_request(:get, uri, nil, options)["Authorization"]}
       end
 
-      def map_student_search_params(params)
+      def map_search_params(params)
         params = params.dup
         default_params = {}
 
@@ -208,40 +213,53 @@ module Bright
         return school_data_hsh
       end
 
-      def convert_to_student_data(student_params)
-        return {} if student_params.blank?
-        student_data_hsh = {
-          :api_id => student_params["sourcedId"],
-          :first_name => student_params["givenName"],
-          :middle_name => student_params["middleName"],
-          :last_name => student_params["familyName"],
-          :sis_student_id => student_params["identifier"],
-          :last_modified => student_params["dateLastModified"]
-        }
-        unless student_params["userIds"].blank?
-          if (state_id_hsh = student_params["userIds"].detect{|user_id_hsh| user_id_hsh["type"] == "stateID"})
-            student_data_hsh[:state_student_id] = state_id_hsh["identifier"]
+      def convert_to_user_data(user_params)
+        return {} if user_params.blank?
+        user_data_hsh = {
+          :api_id => user_params["sourcedId"],
+          :first_name => user_params["givenName"],
+          :middle_name => user_params["middleName"],
+          :last_name => user_params["familyName"],
+          :last_modified => user_params["dateLastModified"]
+        }.reject{|k,v| v.blank?}
+        unless user_params["identifier"].blank?
+          user_data_hsh[:sis_student_id] = user_params["identifier"]
+        end
+        unless user_params["userIds"].blank?
+          if (state_id_hsh = user_params["userIds"].detect{|user_id_hsh| user_id_hsh["type"] == "stateID"})
+            user_data_hsh[:state_student_id] = state_id_hsh["identifier"]
           end
         end
-        unless student_params["email"].blank?
-          student_data_hsh[:email_address] = {
-            :email_address => student_params["email"]
+        unless user_params["email"].blank?
+          user_data_hsh[:email_address] = {
+            :email_address => user_params["email"]
           }
         end
-        unless student_params["orgs"].blank?
-          if (s = student_params["orgs"].detect{|org| org["href"] =~ /\/schools\//})
+        unless user_params["orgs"].blank?
+          if (s = user_params["orgs"].detect{|org| org["href"] =~ /\/schools\//})
             self.schools_cache ||= {}
             if (attending_school = self.schools_cache[s["sourcedId"]]).nil?
               attending_school = self.get_school_by_api_id(s["sourcedId"])
               self.schools_cache[attending_school.api_id] = attending_school
             end
           end
-          student_data_hsh[:school] = attending_school
+          if attending_school
+            user_data_hsh[:school] = attending_school
+          end
+        end
+        unless user_params["phone"].blank?
+          user_data_hsh[:phone_numbers] = [{:phone_number => user_params["phone"]}]
         end
 
-        student_data_hsh.merge!(get_demographic_information(student_data_hsh[:api_id]))
+        #add the demographic information
+        user_data_hsh.merge!(get_demographic_information(user_data_hsh[:api_id]))
 
-        return student_data_hsh
+        #if you're a student, build the contacts too
+        if user_params["role"] == "student" and !user_params["agents"].blank?
+          user_data_hsh[:contacts] = user_params["agents"].map{ |agent_hsh| self.get_contact_by_api_id(agent_hsh["sourcedId"]) }
+        end
+
+        return user_data_hsh
       end
 
       def get_demographic_information(api_id)
