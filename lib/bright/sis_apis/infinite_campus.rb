@@ -8,7 +8,7 @@ module Bright
       @@doc_url = "https://content.infinitecampus.com/sis/latest/documentation/oneroster-api"
       @@api_version = "v1.1"
 
-      attr_accessor :connection_options, :schools_cache
+      attr_accessor :connection_options, :schools_cache, :school_years_cache
 
       DEMOGRAPHICS_CONVERSION = {
         "americanIndianOrAlaskaNative"=>"American Indian Or Alaska Native",
@@ -257,6 +257,10 @@ module Bright
         #if you're a student, build the contacts too
         if user_params["role"] == "student" and !user_params["agents"].blank?
           user_data_hsh[:contacts] = user_params["agents"].map{ |agent_hsh| self.get_contact_by_api_id(agent_hsh["sourcedId"]) }
+          user_data_hsh[:grade] = (user_params["grades"] || []).first
+          if !user_data_hsh[:grade].blank?
+            user_data_hsh[:grade_school_year] = get_grade_school_year
+          end
         end
 
         return user_data_hsh
@@ -282,6 +286,19 @@ module Bright
           end
         end
         return demographic_hsh
+      end
+
+      def get_grade_school_year(date = Date.today)
+        #return the school year of a specific date
+        self.school_years_cache ||= {}
+        if self.school_years_cache[date].nil?
+          academic_periods_params = self.request(:get, "academicSessions", {"filter" => "startDate<='#{date.to_s}' AND endDate>='#{date.to_s}' AND status='active'"})["academicSessions"]
+          school_years = academic_periods_params.map{|ap| ap["schoolYear"]}.uniq
+          if school_years.size == 1
+            self.school_years_cache[date] = school_years.first
+          end
+        end
+        return self.school_years_cache[date]
       end
 
     end
