@@ -297,10 +297,17 @@ module Bright
 
       def convert_to_school_data(attrs)
         cattrs = {}
-
         cattrs[:api_id] = attrs["id"]
         cattrs[:name] = attrs["name"]
         cattrs[:number] = attrs["school_number"]
+        cattrs[:low_grade] = attrs["low_grade"]
+        cattrs[:high_grade] = attrs["high_grade"]
+        if (address_attributes = attrs.dig("addresses"))
+          cattrs[:address] = convert_to_address_data(address_attributes)
+        end
+        if (phone_number_attributes = attrs.dig("phones", "main", "number"))
+          cattrs[:phone_number] = {:phone_number => phone_number_attributes}
+        end
 
         cattrs.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
