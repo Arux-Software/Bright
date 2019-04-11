@@ -5,7 +5,7 @@ module Bright
     TYPES = ["Cell", "Home", "Work", "Other"]
 
     def phone_number=(number)
-      number_a = number.split(/x|X/)
+      number_a = number.to_s.split(/x|X/)
       if number_a.size == 2
         @extension = number_a.last.gsub(/[^0-9]/, "").strip
       end
