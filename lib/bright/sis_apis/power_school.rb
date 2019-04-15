@@ -113,7 +113,6 @@ module Bright
         end
 
         schools_response_hash = self.request(:get, 'ws/v1/district/school', params)
-        puts schools_response_hash.inspect
         schools_hsh = [schools_response_hash["schools"]["school"]].flatten
 
         schools = schools_hsh.compact.collect {|st_hsh|
@@ -211,7 +210,7 @@ module Bright
 
         cattrs[:api_id] = attrs["id"].to_s
         cattrs[:sis_student_id] = attrs["local_id"].to_s
-        cattrs[:state_student_id]   = attrs["state_province_id"].to_s
+        cattrs[:state_student_id] = attrs["state_province_id"].to_s
 
         if attrs["demographics"]
           if attrs["demographics"]["birth_date"]
@@ -228,10 +227,35 @@ module Bright
           cattrs[:projected_graduation_year] = pg if pg > 0
         end
 
+        #Student Address
         begin
-        cattrs[:addresses] = attrs["addresses"].to_a.collect{|a| self.convert_to_address_data(a)} if attrs["addresses"]
-      rescue
-      end
+          cattrs[:addresses] = attrs["addresses"].to_a.collect{|a| self.convert_to_address_data(a)}.uniq{|a| a[:street]} if attrs["addresses"]
+        rescue
+        end
+
+        #Ethnicity / Race Info
+        cattrs[:race] = attrs.dig("ethnicity_race", "races", "district_race_code")
+        if !attrs.dig("ethnicity_race", "federal_ethnicity").nil?
+          cattrs[:hispanic_ethnicity] = attrs.dig("ethnicity_race", "federal_ethnicity").to_bool
+        end
+
+        #Contacts Info
+        [1,2].each do |contact_id|
+          if !attrs.dig("contact", "emergency_contact_name#{contact_id}").blank? and !attrs.dig("contact", "emergency_phone#{contact_id}").blank?
+            cattrs[:contacts] ||= []
+            contact_attrs = {
+              :first_name => attrs.dig("contact", "emergency_contact_name#{contact_id}").split(",").last.strip,
+              :last_name => attrs.dig("contact", "emergency_contact_name#{contact_id}").split(",").first.strip,
+              :phone_numbers => [
+                {
+                  :phone_number => attrs.dig("contact", "emergency_phone#{contact_id}")
+                }
+              ]
+            }
+            cattrs[:contacts] << contact_attrs
+          end
+        end
+
         cattrs.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
 
@@ -297,10 +321,17 @@ module Bright
 
       def convert_to_school_data(attrs)
         cattrs = {}
-
         cattrs[:api_id] = attrs["id"]
         cattrs[:name] = attrs["name"]
         cattrs[:number] = attrs["school_number"]
+        cattrs[:low_grade] = attrs["low_grade"]
+        cattrs[:high_grade] = attrs["high_grade"]
+        if (address_attributes = attrs.dig("addresses"))
+          cattrs[:address] = convert_to_address_data(address_attributes)
+        end
+        if (phone_number_attributes = attrs.dig("phones", "main", "number"))
+          cattrs[:phone_number] = {:phone_number => phone_number_attributes}
+        end
 
         cattrs.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
