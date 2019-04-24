@@ -234,7 +234,11 @@ module Bright
         end
 
         #Ethnicity / Race Info
-        cattrs[:race] = attrs.dig("ethnicity_race", "races", "district_race_code")
+        if !attrs.dig("ethnicity_race", "races", "district_race_code").nil?
+          #this should be an array, but it doesn't appear PS sends it as one
+          cattrs[:race] = [attrs.dig("ethnicity_race", "races", "district_race_code")]
+        end
+
         if !attrs.dig("ethnicity_race", "federal_ethnicity").nil?
           cattrs[:hispanic_ethnicity] = attrs.dig("ethnicity_race", "federal_ethnicity").to_bool
         end
