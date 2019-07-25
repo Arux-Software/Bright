@@ -8,8 +8,13 @@ module Bright
     end
 
     def to_s
-      "Failed with #{response.code} #{response.message if response.respond_to?(:message)}"
+      "Failed with #{response.code} #{response.message if response.respond_to?(:message)}".strip
     end
+
+    def body
+      response.body
+    end
+
   end
 
   class UnknownAttributeError < NoMethodError
