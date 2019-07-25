@@ -27,5 +27,7 @@ require "bright/sis_apis/skyward.rb"
 require "bright/sis_apis/bright_sis.rb"
 
 module Bright
-
+  class << self
+    attr_accessor :devmode
+  end
 end
