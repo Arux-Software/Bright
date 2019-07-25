@@ -41,6 +41,10 @@ module Bright
 
         result = nil
 
+        if !Bright.devmode
+          HTTPI.log = false
+        end
+
         realtime = Benchmark.realtime do
           request = HTTPI::Request.new(endpoint.to_s)
           request.headers = headers
@@ -54,13 +58,13 @@ module Bright
             raise ArgumentError, "GET requests do not support a request body" if body
             HTTPI.get(request)
           when :post
-            debug body
+            debug(body) if Bright.devmode
             HTTPI.post(request)
           when :put
-            debug body
+            debug(body) if Bright.devmode
             HTTPI.put(request)
           when :patch
-            debug body
+            debug(body) if Bright.devmode
             HTTPI.patch(request)
           when :delete
             HTTPI.delete(request)
@@ -69,9 +73,11 @@ module Bright
           end
         end
 
-        info "--> %d (%d %.4fs)" % [result.code, result.body ? result.body.length : 0, realtime], tag
-        debug result.body
-        result
+        if Bright.devmode
+          info("--> %d (%d %.4fs)" % [result.code, result.body ? result.body.length : 0, realtime], tag)
+          debug(result.body)
+        end
+        handle_response(result)
       end
     ensure
       info "connection_request_total_time=%.4fs" % [Time.now.to_f - request_start], tag
@@ -88,15 +94,10 @@ module Bright
     end
 
     def handle_response(response)
-      if @ignore_http_status then
-        return response.body
+      if @ignore_http_status or !response.error?
+        return response
       else
-        case response.code.to_i
-        when 200...300
-          response.body
-        else
-          raise ResponseError.new(response)
-        end
+        raise ResponseError.new(response)
       end
     end
 
