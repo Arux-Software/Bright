@@ -256,7 +256,15 @@ module Bright
 
         #if you're a student, build the contacts too
         if user_params["role"] == "student" and !user_params["agents"].blank?
-          user_data_hsh[:contacts] = user_params["agents"].map{ |agent_hsh| self.get_contact_by_api_id(agent_hsh["sourcedId"]) }
+          user_data_hsh[:contacts] = user_params["agents"].collect do |agent_hsh|
+            begin
+              self.get_contact_by_api_id(agent_hsh["sourcedId"])
+            rescue Bright::ResponseError => e
+              if !e.message.to_s.include?("404")
+                raise e
+              end
+            end
+          end.compact
           user_data_hsh[:grade] = (user_params["grades"] || []).first
           if !user_data_hsh[:grade].blank?
             user_data_hsh[:grade_school_year] = get_grade_school_year
