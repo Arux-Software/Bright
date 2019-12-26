@@ -31,6 +31,12 @@ module Bright
       @ssl_version = nil
       @proxy_address = nil
       @proxy_port = nil
+
+      if Bright.devmode && !@logger
+        @logger = Logger.new(STDOUT)
+        @logger.level = Logger::INFO
+      end
+
     end
 
     def request(method, body, headers = {})
