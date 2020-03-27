@@ -21,6 +21,7 @@ module Bright
     attr_accessor :ignore_http_status
     attr_accessor :proxy_address
     attr_accessor :proxy_port
+    attr_accessor :retry_attempts
 
     def initialize(endpoint)
       @endpoint     = endpoint.is_a?(URI) ? endpoint : URI.parse(endpoint)
@@ -31,6 +32,7 @@ module Bright
       @ssl_version = nil
       @proxy_address = nil
       @proxy_port = nil
+      @retry_attempts = 2
 
       if Bright.devmode && !@logger
         @logger = Logger.new(STDOUT)
@@ -41,9 +43,9 @@ module Bright
 
     def request(method, body, headers = {})
       request_start = Time.now.to_f
-
+      retries = 0
       begin
-        info "connection_http_method=#{method.to_s.upcase} connection_uri=#{endpoint}", tag
+        info "connection_http_method=#{method.to_s.upcase} connection_uri=#{endpoint} headers=#{headers.inspect}", tag
 
         result = nil
 
@@ -83,13 +85,35 @@ module Bright
           info("--> %d (%d %.4fs)" % [result.code, result.body ? result.body.length : 0, realtime], tag)
           debug(result.body)
         end
+
         handle_response(result)
+
+      rescue Bright::ResponseError => e
+        retries += 1
+        if e.server_error? && retries <= @retry_attempts.to_i
+          error("retrying #{retries}: #{e.class.to_s} - #{e.to_s}")
+          sleep(retries * 3)
+          retry
+        else
+          raise
+        end
+      rescue Errno::ECONNREFUSED, Net::ReadTimeout => e
+        retries += 1
+        if retries <= @retry_attempts.to_i
+          error("retrying #{retries}: #{e.class.to_s} - #{e.to_s}")
+          sleep(retries * 3)
+          retry
+        else
+          raise
+        end
       end
+
     ensure
       info "connection_request_total_time=%.4fs" % [Time.now.to_f - request_start], tag
     end
 
     private
+
     def configure_proxy(http)
       http.proxy = "#{proxy_address}:#{proxy_port}" if proxy_address
     end
