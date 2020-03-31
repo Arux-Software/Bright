@@ -22,13 +22,13 @@ module Bright
       end
 
       def connection_retry_wrapper(&block)
-        @retry_attempts = connection_options[:retry_attempts] || 2
+        retry_attempts = connection_options[:retry_attempts] || 2
         retries = 0
         begin
           yield
         rescue Bright::ResponseError => e
           retries += 1
-          if e.server_error? && retries <= @retry_attempts.to_i
+          if e.server_error? && retries <= retry_attempts.to_i
             puts "retrying #{retries}: #{e.class.to_s} - #{e.to_s}"
             sleep(retries * 3)
             retry
@@ -37,7 +37,7 @@ module Bright
           end
         rescue Errno::ECONNREFUSED, Net::ReadTimeout, EOFError => e
           retries += 1
-          if retries <= @retry_attempts.to_i
+          if retries <= retry_attempts.to_i
             puts "retrying #{retries}: #{e.class.to_s} - #{e.to_s}"
             sleep(retries * 3)
             retry
