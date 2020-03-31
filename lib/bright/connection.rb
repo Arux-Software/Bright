@@ -21,7 +21,6 @@ module Bright
     attr_accessor :ignore_http_status
     attr_accessor :proxy_address
     attr_accessor :proxy_port
-    attr_accessor :retry_attempts
 
     def initialize(endpoint)
       @endpoint     = endpoint.is_a?(URI) ? endpoint : URI.parse(endpoint)
@@ -32,7 +31,6 @@ module Bright
       @ssl_version = nil
       @proxy_address = nil
       @proxy_port = nil
-      @retry_attempts = 2
 
       if Bright.devmode && !@logger
         @logger = Logger.new(STDOUT)
@@ -43,70 +41,48 @@ module Bright
 
     def request(method, body, headers = {})
       request_start = Time.now.to_f
-      retries = 0
-      begin
-        info "connection_http_method=#{method.to_s.upcase} connection_uri=#{endpoint} headers=#{headers.inspect}", tag
+      info "connection_http_method=#{method.to_s.upcase} connection_uri=#{endpoint} headers=#{headers.inspect}", tag
 
-        result = nil
+      result = nil
 
-        if !Bright.devmode
-          HTTPI.log = false
-        end
+      if !Bright.devmode
+        HTTPI.log = false
+      end
 
-        realtime = Benchmark.realtime do
-          request = HTTPI::Request.new(endpoint.to_s)
-          request.headers = headers
-          request.body = body if body
-          request.auth.ssl.verify_mode = :none if !@verify_peer
-          configure_proxy(request)
-          configure_timeouts(request)
+      realtime = Benchmark.realtime do
+        request = HTTPI::Request.new(endpoint.to_s)
+        request.headers = headers
+        request.body = body if body
+        request.auth.ssl.verify_mode = :none if !@verify_peer
+        configure_proxy(request)
+        configure_timeouts(request)
 
-          result = case method
-          when :get
-            raise ArgumentError, "GET requests do not support a request body" if body
-            HTTPI.get(request)
-          when :post
-            debug(body) if Bright.devmode
-            HTTPI.post(request)
-          when :put
-            debug(body) if Bright.devmode
-            HTTPI.put(request)
-          when :patch
-            debug(body) if Bright.devmode
-            HTTPI.patch(request)
-          when :delete
-            HTTPI.delete(request)
-          else
-            raise ArgumentError, "Unsupported request method #{method.to_s.upcase}"
-          end
-        end
-
-        if Bright.devmode
-          info("--> %d (%d %.4fs)" % [result.code, result.body ? result.body.length : 0, realtime], tag)
-          debug(result.body)
-        end
-
-        handle_response(result)
-
-      rescue Bright::ResponseError => e
-        retries += 1
-        if e.server_error? && retries <= @retry_attempts.to_i
-          error("retrying #{retries}: #{e.class.to_s} - #{e.to_s}")
-          sleep(retries * 3)
-          retry
+        result = case method
+        when :get
+          raise ArgumentError, "GET requests do not support a request body" if body
+          HTTPI.get(request)
+        when :post
+          debug(body) if Bright.devmode
+          HTTPI.post(request)
+        when :put
+          debug(body) if Bright.devmode
+          HTTPI.put(request)
+        when :patch
+          debug(body) if Bright.devmode
+          HTTPI.patch(request)
+        when :delete
+          HTTPI.delete(request)
         else
-          raise
-        end
-      rescue Errno::ECONNREFUSED, Net::ReadTimeout => e
-        retries += 1
-        if retries <= @retry_attempts.to_i
-          error("retrying #{retries}: #{e.class.to_s} - #{e.to_s}")
-          sleep(retries * 3)
-          retry
-        else
-          raise
+          raise ArgumentError, "Unsupported request method #{method.to_s.upcase}"
         end
       end
+
+      if Bright.devmode
+        info("--> %d (%d %.4fs)" % [result.code, result.body ? result.body.length : 0, realtime], tag)
+        debug(result.body)
+      end
+
+      handle_response(result)
 
     ensure
       info "connection_request_total_time=%.4fs" % [Time.now.to_f - request_start], tag
