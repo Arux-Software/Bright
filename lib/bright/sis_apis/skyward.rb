@@ -139,9 +139,11 @@ module Bright
           body = JSON.dump(params)
         end
 
-        headers = self.headers_for_auth
-        connection = Bright::Connection.new(uri)
-        response = connection.request(method, body, headers)
+        response = connection_retry_wrapper {
+          connection = Bright::Connection.new(uri)
+          headers = self.headers_for_auth
+          connection.request(method, body, headers)
+        }
 
         if !response.error?
           response_hash = JSON.parse(response.body)

@@ -5,12 +5,12 @@ module Bright
   module SisApi
     class TSIS < Base
       DATE_FORMAT = '%m/%d/%Y'
-      
+
       @@description = "Connects to the TIES API for accessing TIES TSIS student information"
       @@doc_url = "#unkown"
-      
+
       attr_accessor :connection_options
-      
+
       def initialize(options = {})
         self.connection_options = options[:connection] || {}
         # {
@@ -20,17 +20,17 @@ module Bright
         #   :uri => ""
         # }
       end
-      
+
       def get_student_by_api_id(api_id, params = {})
         self.get_student(params.merge({:sis_student_id => api_id}))
       end
-      
+
       def get_student(params = {}, options = {})
         params = self.apply_options(params, options.merge({:per_page => 1}))
 
         # Students only gets you students that are enrolled in a school for a given school year.
         students_response_hash = self.request(:get, 'Students/', self.map_search_params(params))
-        found_student = nil 
+        found_student = nil
         if students_response_hash["Return"] and students_response_hash["Return"].first
           found_student =  Student.new(convert_to_student_data(students_response_hash["Return"].first))
         end
@@ -43,10 +43,10 @@ module Bright
         end
         found_student
       end
-      
+
       def get_students(params = {}, options = {})
         params = self.apply_options(params, options)
-        
+
         if params[:schoolyear]
           # Students only gets you students that are enrolled in a school for a given school year.
           response_hash = self.request(:get, self.apply_page_to_url('Students/', options[:page]), self.map_search_params(params))
@@ -54,10 +54,10 @@ module Bright
           # Students/Family can get you students that are not enrolled in a school for a given school year.
           response_hash = self.request(:get, self.apply_page_to_url('Students/Family/', options[:page]), self.map_search_params(params))
         end
-        
+
         students = response_hash["Return"].collect{|hsh| Student.new(convert_to_student_data(hsh))}
         total_results = response_hash["TotalCount"].to_i
-        
+
         if options[:wrap_in_collection] != false
           api = self
           load_more_call = proc { |page|
@@ -66,24 +66,24 @@ module Bright
           }
 
           ResponseCollection.new({
-            :seed_page => students, 
+            :seed_page => students,
             :total => total_results,
-            :per_page => options[:per_page], 
+            :per_page => options[:per_page],
             :load_more_call => load_more_call
           })
         else
           students
         end
       end
-      
+
       def create_student(student)
         raise NotImplementedError, "TSIS does not support creating students"
       end
-      
+
       def update_student(student)
         raise NotImplementedError, "TSIS does not support updating students"
       end
-      
+
       def get_schools(params = {}, options = {})
         params = self.apply_options(params, options)
 
@@ -110,7 +110,7 @@ module Bright
           schools
         end
       end
-            
+
       def request(method, path, params = {})
         uri  = "#{self.connection_options[:uri]}/#{path}"
         body = nil
@@ -120,22 +120,24 @@ module Bright
         else
           body = query
         end
-        
-        headers = self.headers_for_auth(uri)
 
-        connection = Bright::Connection.new(uri)
-        response = connection.request(method, body, headers)
+        response = connection_retry_wrapper {
+          connection = Bright::Connection.new(uri)
+          headers = self.headers_for_auth
+          connection.request(method, body, headers)
+        }
+
         if !response.error?
           response_hash = JSON.parse(response.body)
         end
         response_hash
       end
-      
+
       protected
-      
+
       def map_search_params(params)
         params = params.dup
-        
+
         params["studentname"] = params.delete(:name)
         params["studentname"] ||= "#{params.delete(:last_name)}, #{params.delete(:first_name)} #{params.delete(:middle_name)}".strip
         params["studentids"] = params.delete(:sis_student_id)
@@ -147,10 +149,10 @@ module Bright
           k = k.to_s.gsub(/[^A-Za-z]/, "").downcase
           [k,v]
         end]
-        
+
         params.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
-      
+
       def convert_to_student_data(attrs)
         catt = {}
         if attrs["StudentName"]
@@ -170,7 +172,7 @@ module Bright
           catt[:middle_name]      = attrs["MiddleName"].strip
           catt[:last_name]        = (attrs["LastName"] || attrs["SurName"]).strip
         end
-        
+
         catt[:state_student_id] = (attrs["StateId"] || attrs["StudentStateId"]).to_s
         catt[:sis_student_id]   = attrs["StudentId"].to_s
         catt[:api_id]           = attrs["StudentId"].to_s
@@ -180,18 +182,18 @@ module Bright
 
         bd = attrs["BirthDate"] || attrs["StudentBirthDate"]
         if !(bd.nil? or bd.empty?)
-          begin 
+          begin
             catt[:birth_date] = Date.strptime(bd, DATE_FORMAT)
           rescue => e
             puts "#{e.inspect} #{bd}"
           end
         end
-        
+
         catt[:addresses] = [self.convert_to_address_data(attrs["Address"])] if attrs["Address"]
-        
+
         catt.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
-      
+
       def convert_to_address_data(attrs)
         cattrs = {}
 
@@ -204,38 +206,38 @@ module Bright
         cattrs[:state] = attrs["State"]
         cattrs[:postal_code] = attrs["Zip"]
         cattrs[:type] = attrs["Type"].to_s.downcase
-        
+
         cattrs.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
-      
+
       def convert_to_school_data(attrs)
         cattrs = {}
-        
+
         cattrs[:name] = attrs["Name"]
         cattrs[:api_id] = cattrs[:number] = attrs["SchoolId"]
         cattrs[:address] = convert_to_address_data(attrs)
-        
+
         cattrs.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
       end
-      
+
       def apply_options(params, options)
         options[:per_page] = params[:rpp] ||= params.delete(:per_page) || options[:per_page] || 100
         options[:page] = params.delete(:page) || options[:page]
         params[:schoolyear] ||= params.delete(:school_year) || options[:school_year]
         params
       end
-      
+
       def apply_page_to_url(url, page)
         "#{url}#{url[-1] == "/" ? "" : "/"}#{page}"
       end
-      
+
       def headers_for_auth(uri)
         t = Time.now.utc.httpdate
         string_to_sign = "GET\n#{t}\n#{uri}"
-        
+
         signature = Base64.encode64(OpenSSL::HMAC.digest(OpenSSL::Digest.new('sha1'), self.connection_options[:secret], string_to_sign)).strip
         authorization = "TIES" + " " + self.connection_options[:key] + ":" + signature
-    
+
         {
             'Authorization' => authorization,
             'DistrictNumber' => self.connection_options[:district_id],
