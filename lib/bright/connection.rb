@@ -103,7 +103,7 @@ module Bright
       if @ignore_http_status or !response.error?
         return response
       else
-        raise ResponseError.new(response)
+        raise ResponseError.new(response, endpoint.to_s)
       end
     end
 
