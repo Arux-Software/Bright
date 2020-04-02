@@ -1,10 +1,11 @@
 module Bright
   class ResponseError < StandardError
     attr_reader :response
+    attr_reader :uri
 
-    def initialize(response, message = nil)
+    def initialize(response, uri = nil)
       @response = response
-      @message  = message
+      @uri = uri
     end
 
     def to_s
