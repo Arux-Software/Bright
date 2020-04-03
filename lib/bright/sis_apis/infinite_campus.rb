@@ -128,7 +128,7 @@ module Bright
         else
           body = JSON.dump(params)
         end
-        
+
         response = connection_retry_wrapper {
           connection = Bright::Connection.new(uri)
           headers = self.headers_for_auth(uri)
@@ -171,7 +171,7 @@ module Bright
           when "student_id"
             filter << "identifier='#{v}'"
           when "last_modified"
-            filter << "dateLastModified>='#{v}'"
+            filter << "dateLastModified>='#{v.to_time.utc.xmlschema}'"
           when "role"
             filter << "role='#{v}'"
           else
@@ -193,7 +193,7 @@ module Bright
           when "number"
             filter << "identifier='#{v}'"
           when "last_modified"
-            filter << "dateLastModified>='#{v}'"
+            filter << "dateLastModified>='#{v.to_time.utc.xmlschema}'"
           else
             default_params[k] = v
           end
