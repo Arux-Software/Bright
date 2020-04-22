@@ -236,9 +236,9 @@ module Bright
         end
 
         #Ethnicity / Race Info
-        if !attrs.dig("ethnicity_race", "races", "district_race_code").nil?
-          #this should be an array, but it doesn't appear PS sends it as one
-          cattrs[:race] = [attrs.dig("ethnicity_race", "races", "district_race_code")]
+        if !(race_hshs = attrs.dig("ethnicity_race", "races")).nil?
+          #this should be an array, but it doesn't appear PS always sends it as one
+          cattrs[:race] = [race_hshs].flatten.map{|race_hsh| race_hsh["district_race_code"]}.compact.uniq
         end
 
         if !attrs.dig("ethnicity_race", "federal_ethnicity").nil?
