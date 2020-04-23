@@ -53,6 +53,7 @@ module Bright
             api = self
             load_more_call = proc { |page|
               # pages start at one, so add a page here
+              params.delete(:page)
               api.get_students(params, {:wrap_in_collection => false, :page => (page + 1)})
             }
 
@@ -123,6 +124,7 @@ module Bright
           api = self
           load_more_call = proc { |page|
             # pages start at one, so add a page here
+            params.delete(:page)
             api.get_schools(params, {:wrap_in_collection => false, :page => (page + 1)})
           }
 
