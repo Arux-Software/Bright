@@ -238,13 +238,15 @@ module Bright
         end
 
         #Ethnicity / Race Info
-        if !(race_hshs = attrs.dig("ethnicity_race", "races")).nil?
-          #this should be an array, but it doesn't appear PS always sends it as one
-          cattrs[:race] = [race_hshs].flatten.map{|race_hsh| race_hsh["district_race_code"]}.compact.uniq
-        end
+        if attrs["ethnicity_race"].is_a?(Hash)
+          if !(race_hshs = attrs.dig("ethnicity_race", "races")).nil?
+            #this should be an array, but it doesn't appear PS always sends it as one
+            cattrs[:race] = [race_hshs].flatten.map{|race_hsh| race_hsh["district_race_code"]}.compact.uniq
+          end
 
-        if !attrs.dig("ethnicity_race", "federal_ethnicity").nil?
-          cattrs[:hispanic_ethnicity] = attrs.dig("ethnicity_race", "federal_ethnicity").to_bool
+          if !attrs.dig("ethnicity_race", "federal_ethnicity").nil?
+            cattrs[:hispanic_ethnicity] = attrs.dig("ethnicity_race", "federal_ethnicity").to_bool
+          end
         end
 
         #Contacts Info
