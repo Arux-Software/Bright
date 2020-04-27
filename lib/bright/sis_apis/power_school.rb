@@ -233,7 +233,7 @@ module Bright
 
         #Student Address
         begin
-          cattrs[:addresses] = attrs["addresses"].to_a.collect{|a| self.convert_to_address_data(a)}.uniq{|a| a[:street]} if attrs["addresses"]
+          cattrs[:addresses] = attrs["addresses"].to_a.collect{|a| self.convert_to_address_data(a)}.select{|a| !a[:street].blank?}.uniq{|a| a[:street]} if attrs["addresses"]
         rescue
         end
 
