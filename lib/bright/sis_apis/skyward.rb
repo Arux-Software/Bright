@@ -111,7 +111,7 @@ module Bright
         return guardians
       end
 
-      def retrive_access_token
+      def retrieve_access_token
         connection = Bright::Connection.new("#{self.connection_options[:uri]}/token")
         response = connection.request(:post,
           {"grant_type" => "password",
@@ -262,7 +262,7 @@ module Bright
 
       def headers_for_auth
         if self.connection_options[:access_token].nil? or self.connection_options[:access_token_expires] < Time.now
-          self.retrive_access_token
+          self.retrieve_access_token
         end
         {
           "Authorization" => "Bearer #{self.connection_options[:access_token]}",
