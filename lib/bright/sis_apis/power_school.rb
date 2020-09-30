@@ -139,7 +139,7 @@ module Bright
         end
       end
 
-      def retrive_access_token
+      def retrieve_access_token
         connection = Bright::Connection.new("#{self.connection_options[:uri]}/oauth/access_token/")
         response = connection.request(:post, "grant_type=client_credentials", self.headers_for_access_token)
         if !response.error?
@@ -415,7 +415,7 @@ module Bright
       end
 
       def headers_for_auth
-        self.retrive_access_token if self.connection_options[:access_token].nil?
+        self.retrieve_access_token if self.connection_options[:access_token].nil?
         {
           "Authorization" => "Bearer #{self.connection_options[:access_token]}",
           "Accept" => "application/json;charset=UTF-8",
