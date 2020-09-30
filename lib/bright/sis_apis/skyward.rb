@@ -124,7 +124,7 @@ module Bright
         end
         if response_hash["access_token"]
           self.connection_options[:access_token] = response_hash["access_token"]
-          self.connection_options[:access_token_expires] = Time.now + response_hash["expires_in"]
+          self.connection_options[:access_token_expires] = (Time.now - 10) + response_hash["expires_in"]
         end
         response_hash
       end
