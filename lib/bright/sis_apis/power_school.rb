@@ -254,8 +254,8 @@ module Bright
           if !attrs.dig("contact", "emergency_contact_name#{contact_id}").blank? and !attrs.dig("contact", "emergency_phone#{contact_id}").blank?
             cattrs[:contacts] ||= []
             contact_attrs = {
-              :first_name => attrs.dig("contact", "emergency_contact_name#{contact_id}").split(",").last.strip,
-              :last_name => attrs.dig("contact", "emergency_contact_name#{contact_id}").split(",").first.strip,
+              :first_name => attrs.dig("contact", "emergency_contact_name#{contact_id}").to_s.split(",").last.strip,
+              :last_name => attrs.dig("contact", "emergency_contact_name#{contact_id}").to_s.split(",").first.strip,
               :phone_numbers => [
                 {
                   :phone_number => attrs.dig("contact", "emergency_phone#{contact_id}")
