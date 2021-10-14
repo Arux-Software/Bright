@@ -6,7 +6,7 @@ module Bright
 
       @@description = "Connects to the Infinite Campus OneRoster API for accessing student information"
       @@doc_url = "https://content.infinitecampus.com/sis/latest/documentation/oneroster-api"
-      @@api_version = "v1.1"
+      @@api_version = "1.1"
 
       attr_accessor :connection_options, :schools_cache, :school_years_cache
 
@@ -24,12 +24,22 @@ module Bright
         # {
         #   :client_id => "",
         #   :client_secret => "",
-        #   :uri => ""
+        #   :api_version => "", (defaults to @@api_version)
+        #   :uri => "",
+        #   :token_uri => ""  (api_version 1.2 required)
         # }
       end
 
+      def api_version
+        Gem::Version.new(self.connection_options.dig(:api_version) || @@api_version)
+      end
+
       def get_student_by_api_id(api_id, params = {})
-        params = {:role => "student"}.merge(params)
+        if api_version <= Gem::Version.new("1.1")
+          params = {:role => "student"}.merge(params)
+        else
+          params = {:roles => "student"}.merge(params)
+        end
         st_hsh = self.request(:get, "users/#{api_id}", params)
         Student.new(convert_to_user_data(st_hsh["user"])) if st_hsh and st_hsh["user"]
       end
@@ -39,7 +49,11 @@ module Bright
       end
 
       def get_students(params = {}, options = {})
-        params = {:role => "student"}.merge(params)
+        if api_version <= Gem::Version.new("1.1")
+          params = {:role => "student"}.merge(params)
+        else
+          params = {:roles => "student"}.merge(params)
+        end
         params[:limit] = params[:limit] || options[:limit] || 100
         students_response_hash = self.request(:get, 'users', self.map_search_params(params))
         total_results = students_response_hash[:response_headers]["x-total-count"].to_i
@@ -116,7 +130,7 @@ module Bright
 
       def get_contact_by_api_id(api_id, params ={})
         contact_hsh = self.request(:get, "users/#{api_id}", params)
-        Contact.new(convert_to_user_data(contact_hsh["user"])) if contact_hsh and contact_hsh["user"]
+        Contact.new(convert_to_user_data(contact_hsh["user"], bright_type: "Contact")) if contact_hsh and contact_hsh["user"]
       end
 
       def request(method, path, params = {})
@@ -148,11 +162,50 @@ module Bright
       protected
 
       def headers_for_auth(uri)
-        site = URI.parse(self.connection_options[:uri])
-        site = "#{site.scheme}://#{site.host}"
-        consumer = OAuth::Consumer.new(self.connection_options[:client_id], self.connection_options[:client_secret], { :site => site, :scheme => :header })
-        options = {:timestamp => Time.now.to_i, :nonce => SecureRandom.uuid}
-        {"Authorization" => consumer.create_signed_request(:get, uri, nil, options)["Authorization"]}
+        case api_version
+        when Gem::Version.new("1.1")
+          site = URI.parse(self.connection_options[:uri])
+          site = "#{site.scheme}://#{site.host}"
+          consumer = OAuth::Consumer.new(self.connection_options[:client_id], self.connection_options[:client_secret], { :site => site, :scheme => :header })
+          options = {:timestamp => Time.now.to_i, :nonce => SecureRandom.uuid}
+          {"Authorization" => consumer.create_signed_request(:get, uri, nil, options)["Authorization"]}
+        when Gem::Version.new("1.2")
+          if self.connection_options[:access_token].nil? or self.connection_options[:access_token_expires] < Time.now
+            self.retrieve_access_token
+          end
+          {
+            "Authorization" => "Bearer #{self.connection_options[:access_token]}",
+            "Accept" => "application/json;charset=UTF-8",
+            "Content-Type" =>"application/json;charset=UTF-8"
+          }
+        end
+      end
+
+      def retrieve_access_token
+        connection = Bright::Connection.new(self.connection_options[:token_uri])
+        response = connection.request(:post,
+          {
+            "grant_type" => "client_credentials",
+            "username" => self.connection_options[:client_id],
+            "password" => self.connection_options[:client_secret]
+          },
+          self.headers_for_access_token
+        )
+        if !response.error?
+          response_hash = JSON.parse(response.body)
+        end
+        if response_hash["access_token"]
+          self.connection_options[:access_token] = response_hash["access_token"]
+          self.connection_options[:access_token_expires] = (Time.now - 10) + response_hash["expires_in"]
+        end
+        response_hash
+      end
+
+      def headers_for_access_token
+        {
+          "Authorization" => "Basic #{Base64.strict_encode64("#{self.connection_options[:client_id]}:#{self.connection_options[:client_secret]}")}",
+          "Content-Type" => "application/x-www-form-urlencoded;charset=UTF-8"
+        }
       end
 
       def map_search_params(params)
@@ -215,7 +268,7 @@ module Bright
         return school_data_hsh
       end
 
-      def convert_to_user_data(user_params)
+      def convert_to_user_data(user_params, bright_type: "Student")
         return {} if user_params.blank?
         user_data_hsh = {
           :api_id => user_params["sourcedId"],
@@ -226,6 +279,9 @@ module Bright
         }.reject{|k,v| v.blank?}
         unless user_params["identifier"].blank?
           user_data_hsh[:sis_student_id] = user_params["identifier"]
+        end
+        unless user_params["userMasterIdentifier"].blank?
+          user_data_hsh[:state_student_id] = user_params["userMasterIdentifier"]
         end
         unless user_params["userIds"].blank?
           if (state_id_hsh = user_params["userIds"].detect{|user_id_hsh| user_id_hsh["type"] == "stateID"})
@@ -252,12 +308,15 @@ module Bright
         unless user_params["phone"].blank?
           user_data_hsh[:phone_numbers] = [{:phone_number => user_params["phone"]}]
         end
+          user_data_hsh[:phone_numbers] ||= []
+          user_data_hsh[:phone_numbers] << {:phone_number => user_params["sms"]}
+        end
 
         #add the demographic information
         user_data_hsh.merge!(get_demographic_information(user_data_hsh[:api_id]))
 
         #if you're a student, build the contacts too
-        if user_params["role"] == "student" and !user_params["agents"].blank?
+        if bright_type == "Student" and !user_params["agents"].blank?
           user_data_hsh[:contacts] = user_params["agents"].collect do |agent_hsh|
             begin
               self.get_contact_by_api_id(agent_hsh["sourcedId"])
