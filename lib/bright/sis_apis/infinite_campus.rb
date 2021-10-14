@@ -308,6 +308,7 @@ module Bright
         unless user_params["phone"].blank?
           user_data_hsh[:phone_numbers] = [{:phone_number => user_params["phone"]}]
         end
+        unless user_params["sms"].blank?
           user_data_hsh[:phone_numbers] ||= []
           user_data_hsh[:phone_numbers] << {:phone_number => user_params["sms"]}
         end
