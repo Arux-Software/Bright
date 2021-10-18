@@ -346,7 +346,7 @@ module Bright
           demographic_hsh[:gender] = demographics_params["sex"].to_s[0].upcase
         end
         DEMOGRAPHICS_CONVERSION.each do |demographics_key, demographics_value|
-          if demographics_params[demographics_key] == "true"
+          if demographics_params[demographics_key].to_bool
             if demographics_value == "Hispanic Or Latino"
               demographic_hsh[:hispanic_ethnicity] = true
             else
