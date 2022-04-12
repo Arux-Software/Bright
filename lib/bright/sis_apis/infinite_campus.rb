@@ -314,7 +314,8 @@ module Bright
         end
 
         #add the demographic information
-        user_data_hsh.merge!(get_demographic_information(user_data_hsh[:api_id]))
+        demographics_hash = get_demographic_information(user_data_hsh[:api_id])
+        user_data_hsh.merge!(demographics_hash) unless demographics_hash.blank?
 
         #if you're a student, build the contacts too
         if bright_type == "Student" and !user_params["agents"].blank?
@@ -339,6 +340,8 @@ module Bright
       def get_demographic_information(api_id)
         demographic_hsh = {}
         demographics_params = self.request(:get, "demographics/#{api_id}")["demographics"]
+        return demographic_hsh if demographics_params.nil?
+
         unless (bday = demographics_params["birthdate"] || demographics_params["birthDate"]).blank?
           demographic_hsh[:birth_date] = Date.parse(bday).to_s
         end
