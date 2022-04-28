@@ -343,8 +343,11 @@ module Bright
         begin
           demographics_params = request(:get, "demographics/#{api_id}")["demographics"]
         rescue Bright::ResponseError => e
-          puts e
-          return demographic_hsh
+          if e.message.to_s.include?('404')
+            return demographic_hsh
+          else
+            raise e
+          end
         end
 
         unless (bday = demographics_params["birthdate"] || demographics_params["birthDate"]).blank?
