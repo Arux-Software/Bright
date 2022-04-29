@@ -339,8 +339,16 @@ module Bright
 
       def get_demographic_information(api_id)
         demographic_hsh = {}
-        demographics_params = self.request(:get, "demographics/#{api_id}")["demographics"]
-        return demographic_hsh if demographics_params.nil?
+
+        begin
+          demographics_params = request(:get, "demographics/#{api_id}")["demographics"]
+        rescue Bright::ResponseError => e
+          if e.message.to_s.include?('404')
+            return demographic_hsh
+          else
+            raise e
+          end
+        end
 
         unless (bday = demographics_params["birthdate"] || demographics_params["birthDate"]).blank?
           demographic_hsh[:birth_date] = Date.parse(bday).to_s
