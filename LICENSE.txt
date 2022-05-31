@@ -1,4 +1,4 @@
-Copyright (c) 2015 Stephen Heuer and Steven Novotny
+Copyright (c) 2022 Arux Software, Inc.
 
 MIT License
 
