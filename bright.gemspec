@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Arux Software"]
   spec.email         = ["sheuer@aruxsoftware.com"]
   spec.summary       = "Framework and tools for dealing with Student Information Systems"
-  spec.description   = "Bright is a simple Student Information System API abstraction library used in and sponsored by Eleyo. It is written by Stephen Heuer, Steven Novotny, and contributors. The aim of the project is to abstract as many parts as possible away from the user to offer a consistent interface across all supported Student Information System APIs."
+  spec.description   = "Bright is a simple Student Information System API abstraction library used in and sponsored by Arux Software. It is written by Stephen Heuer, Steven Novotny, and contributors. The aim of the project is to abstract as many parts as possible away from the user to offer a consistent interface across all supported Student Information System APIs."
   spec.homepage      = ""
   spec.license       = "MIT"
 
