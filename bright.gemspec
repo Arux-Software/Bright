@@ -20,8 +20,8 @@ Gem::Specification.new do |spec|
 
   spec.add_runtime_dependency "httpi", "~> 2.1"
   spec.add_runtime_dependency "json", ">= 0"
-  spec.add_runtime_dependency 'oauth', ">= 0.5.4"
-  spec.add_runtime_dependency 'parallel', "~> 1.2"
+  spec.add_runtime_dependency "oauth", ">= 0.5.4"
+  spec.add_runtime_dependency "parallel", "~> 1.2"
 
   spec.add_development_dependency "bundler", ">= 2.2.10"
   spec.add_development_dependency "rake", "~> 12.3.3"
