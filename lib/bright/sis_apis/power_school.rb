@@ -61,7 +61,8 @@ module Bright
               :seed_page => students,
               :total => total_results,
               :per_page => params[:pagesize],
-              :load_more_call => load_more_call
+              :load_more_call => load_more_call,
+              :no_threads => options[:no_threads]
             })
           else
             students
@@ -132,7 +133,8 @@ module Bright
             :seed_page => schools,
             :total => total_results,
             :per_page => params[:pagesize],
-            :load_more_call => load_more_call
+            :load_more_call => load_more_call,
+            :no_threads => options[:no_threads]
           })
         else
           schools
