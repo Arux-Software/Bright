@@ -35,7 +35,6 @@ module Bright
       end
 
       def get_student_by_api_id(api_id, params = {})
-        binding.pry
         st_hsh = self.request(:get, "students/#{api_id}", params)
         Student.new(convert_to_user_data(st_hsh["user"])) if st_hsh and st_hsh["user"]
       end
