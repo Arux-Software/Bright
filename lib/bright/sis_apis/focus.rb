@@ -360,16 +360,16 @@ module Bright
       end
 
       def get_grade_school_year(date = Date.today)
-        #return the school year of a specific date
-        # self.school_years_cache ||= {}
-        # if self.school_years_cache[date].nil?
-        #   academic_periods_params = self.request(:get, "academicSessions", {"filter" => "startDate<='#{date.to_s}' AND endDate>='#{date.to_s}' AND status='active'"})["academicSessions"]
-        #   school_years = academic_periods_params.map{|ap| ap["schoolYear"]}.uniq
-        #   if school_years.size == 1
-        #     self.school_years_cache[date] = school_years.first
-        #   end
-        # end
-        # return self.school_years_cache[date]
+        # return the school year of a specific date
+        self.school_years_cache ||= {}
+        if self.school_years_cache[date].nil?
+          academic_periods_params = self.request(:get, "academicSessions", {"filter" => "startDate<='#{date.to_s}' AND endDate>='#{date.to_s}' AND status='active'"})["academicSessions"]
+          school_years = academic_periods_params.map{|ap| ap["schoolYear"]}.uniq
+          if school_years.size == 1
+            self.school_years_cache[date] = school_years.first
+          end
+        end
+        return self.school_years_cache[date]
       end
 
     end
