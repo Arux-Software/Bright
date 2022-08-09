@@ -35,7 +35,7 @@ module Bright
           else
             raise
           end
-        rescue Errno::ECONNREFUSED, Errno::ECONNRESET, Net::ReadTimeout, Net::OpenTimeout, EOFError => e
+        rescue Errno::ECONNREFUSED, Errno::ECONNRESET, Net::ReadTimeout, Net::OpenTimeout, SocketError, EOFError => e
           retries += 1
           if retries <= retry_attempts.to_i
             puts "retrying #{retries}: #{e.class.to_s} - #{e.to_s}"

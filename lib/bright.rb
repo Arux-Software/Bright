@@ -26,6 +26,7 @@ require_relative "bright/sis_apis/infinite_campus.rb"
 require_relative "bright/sis_apis/skyward.rb"
 require_relative "bright/sis_apis/bright_sis.rb"
 require_relative "bright/sis_apis/synergy.rb"
+require_relative "bright/sis_apis/focus.rb"
 
 module Bright
   class << self
