@@ -214,7 +214,7 @@ module Bright
         end
 
         ["PhoneNumber", "PhoneNumber2", "PhoneNumber3"].each do |phone_param|
-          if !user_params[phone_param].blank?
+          if user_params[phone_param].present? && user_params["#{phone_param}Type"].present?
             user_data_hsh[:phone_numbers] ||= []
             user_data_hsh[:phone_numbers] << {
               :phone_number => user_params[phone_param],
