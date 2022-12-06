@@ -66,7 +66,7 @@ module Bright
             :total => total_results,
             :per_page => params[:limit],
             :load_more_call => load_more_call,
-            :no_threads => options[:no_threads]
+            :no_threads => 2
           })
         else
           students
