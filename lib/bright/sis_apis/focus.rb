@@ -10,6 +10,8 @@ module Bright
 
       attr_accessor :connection_options, :schools_cache, :school_years_cache
 
+      DEFAULT_NO_THREADS = 2
+
       DEMOGRAPHICS_CONVERSION = {
         "americanIndianOrAlaskaNative"=>"American Indian Or Alaska Native",
         "asian"=>"Asian",
@@ -66,7 +68,7 @@ module Bright
             :total => total_results,
             :per_page => params[:limit],
             :load_more_call => load_more_call,
-            :no_threads => options[:no_threads]
+            :no_threads => options[:no_threads] || DEFAULT_NO_THREADS
           })
         else
           students
