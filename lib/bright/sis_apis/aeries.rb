@@ -102,15 +102,15 @@ module Bright
       def convert_to_student_data(attrs)
         cattrs = {}
 
-        cattrs[:first_name]        = attrs["FirstName"]
-        cattrs[:middle_name]       = attrs["MiddleName"]
-        cattrs[:last_name]         = attrs["LastName"]
+        cattrs[:first_name] = attrs["FirstName"]
+        cattrs[:middle_name] = attrs["MiddleName"]
+        cattrs[:last_name] = attrs["LastName"]
 
-        cattrs[:api_id]           = attrs["PermanentID"]
-        cattrs[:sis_student_id]   = attrs["StudentNumber"]
+        cattrs[:api_id] = attrs["PermanentID"]
+        cattrs[:sis_student_id] = attrs["StudentNumber"]
         cattrs[:state_student_id] = attrs["StateStudentID"]
 
-        cattrs[:sex]           = attrs["Sex"]
+        cattrs[:sex] = attrs["Sex"]
         if attrs["Birthdate"]
           begin
             cattrs[:birth_date] = Date.strptime(attrs["Birthdate"], DATE_FORMAT)
