@@ -346,7 +346,7 @@ module Bright
           demographic_hsh[:birth_date] = Date.parse(bday).to_s
         end
         unless demographics_params["sex"].to_s[0].blank?
-          demographic_hsh[:gender] = demographics_params["sex"].to_s[0].upcase
+          demographic_hsh[:sex] = demographics_params["sex"].to_s[0].upcase
         end
         DEMOGRAPHICS_CONVERSION.each do |demographics_key, demographics_value|
           if demographics_params[demographics_key].to_bool

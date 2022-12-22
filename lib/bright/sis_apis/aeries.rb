@@ -77,7 +77,7 @@ module Bright
         else
           body = JSON.dump(params)
         end
-        
+
         response = connection_retry_wrapper {
           connection = Bright::Connection.new(uri)
           headers = self.headers_for_auth
@@ -102,15 +102,15 @@ module Bright
       def convert_to_student_data(attrs)
         cattrs = {}
 
-        cattrs[:first_name]        = attrs["FirstName"]
-        cattrs[:middle_name]       = attrs["MiddleName"]
-        cattrs[:last_name]         = attrs["LastName"]
+        cattrs[:first_name] = attrs["FirstName"]
+        cattrs[:middle_name] = attrs["MiddleName"]
+        cattrs[:last_name] = attrs["LastName"]
 
-        cattrs[:api_id]           = attrs["PermanentID"]
-        cattrs[:sis_student_id]   = attrs["StudentNumber"]
+        cattrs[:api_id] = attrs["PermanentID"]
+        cattrs[:sis_student_id] = attrs["StudentNumber"]
         cattrs[:state_student_id] = attrs["StateStudentID"]
 
-        cattrs[:gender]           = attrs["Sex"]
+        cattrs[:sex] = attrs["Sex"]
         if attrs["Birthdate"]
           begin
             cattrs[:birth_date] = Date.strptime(attrs["Birthdate"], DATE_FORMAT)

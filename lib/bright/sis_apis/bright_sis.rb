@@ -162,7 +162,7 @@ module Bright
           :grade => student_params["grade"],
           :grade_school_year => student_params["grade_school_year"],
           :projected_graduation_year => student_params["graduation_year"],
-          :gender => student_params["gender"],
+          :sex => student_params["sex"],
           :frl_status => student_params["frl_status"],
           :image => student_params["picture"],
           :hispanic_ethnicity => student_params["hispanic_latino"],
