@@ -281,9 +281,6 @@ module Bright
         unless user_params["identifier"].blank?
           user_data_hsh[:sis_student_id] = user_params["identifier"]
         end
-        unless user_params["userMasterIdentifier"].blank?
-          user_data_hsh[:state_student_id] = user_params["userMasterIdentifier"]
-        end
         unless user_params["userIds"].blank?
           if (state_id_hsh = user_params["userIds"].detect{|user_id_hsh| user_id_hsh["type"] == "stateID"})
             user_data_hsh[:state_student_id] = state_id_hsh["identifier"]
