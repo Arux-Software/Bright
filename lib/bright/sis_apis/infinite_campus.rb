@@ -1,8 +1,6 @@
-require_relative 'one_roster'
-
 module Bright
   module SisApi
-    class InfiniteCampus < OneRoster
+    class OneRoster::InfiniteCampus < OneRoster
 
       def convert_to_user_data(user_params, bright_type: "Student")
         user_data_hsh = super

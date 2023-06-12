@@ -27,6 +27,8 @@ require_relative "bright/sis_apis/skyward.rb"
 require_relative "bright/sis_apis/bright_sis.rb"
 require_relative "bright/sis_apis/synergy.rb"
 require_relative "bright/sis_apis/focus.rb"
+require_relative "bright/sis_apis/one_roster.rb"
+
 
 module Bright
   class << self
