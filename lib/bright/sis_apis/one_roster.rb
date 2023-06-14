@@ -3,9 +3,9 @@ require 'oauth'
 module Bright
   module SisApi
     class OneRoster < Base
-      @@description = "Connects to the Infinite Campus OneRoster API for accessing student information"
-      @@doc_url = "https://content.infinitecampus.com/sis/latest/documentation/oneroster-api"
-      @@api_version = "1.1"
+      @@description = "Connects to the OneRoster API for accessing student information"
+      @@doc_url = "https://www.imsglobal.org/sites/default/files/spec/oneroster/v1p2/rostering-informationmodel/OneRosterv1p2RosteringService_InfoModelv1p0.html"
+      @@api_version = "1.2"
 
       attr_accessor :connection_options, :schools_cache, :school_years_cache
 
