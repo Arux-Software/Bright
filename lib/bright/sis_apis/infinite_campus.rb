@@ -1,3 +1,5 @@
+require_relative "one_roster"
+
 module Bright
   module SisApi
     class OneRoster::InfiniteCampus < OneRoster
