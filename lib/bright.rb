@@ -22,13 +22,14 @@ require_relative "bright/sis_apis/base.rb"
 require_relative "bright/sis_apis/tsis.rb"
 require_relative "bright/sis_apis/power_school.rb"
 require_relative "bright/sis_apis/aeries.rb"
-require_relative "bright/sis_apis/infinite_campus.rb"
-require_relative "bright/sis_apis/skyward.rb"
+
 require_relative "bright/sis_apis/bright_sis.rb"
 require_relative "bright/sis_apis/synergy.rb"
 require_relative "bright/sis_apis/focus.rb"
-require_relative "bright/sis_apis/one_roster.rb"
 
+require_relative "bright/sis_apis/one_roster.rb"
+require_relative "bright/sis_apis/one_roster/infinite_campus"
+require_relative "bright/sis_apis/one_roster/skyward"
 
 module Bright
   class << self
