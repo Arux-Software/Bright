@@ -2,11 +2,10 @@ require 'oauth'
 
 module Bright
   module SisApi
-    class InfiniteCampus < Base
-
-      @@description = "Connects to the Infinite Campus OneRoster API for accessing student information"
-      @@doc_url = "https://content.infinitecampus.com/sis/latest/documentation/oneroster-api"
-      @@api_version = "1.1"
+    class OneRoster < Base
+      @@description = "Connects to the OneRoster API for accessing student information"
+      @@doc_url = "https://www.imsglobal.org/sites/default/files/spec/oneroster/v1p2/rostering-informationmodel/OneRosterv1p2RosteringService_InfoModelv1p0.html"
+      @@api_version = "1.2"
 
       attr_accessor :connection_options, :schools_cache, :school_years_cache
 
@@ -72,12 +71,12 @@ module Bright
             api.get_students(params, {:wrap_in_collection => false})
           }
           ResponseCollection.new({
-            :seed_page => students,
-            :total => total_results,
-            :per_page => params[:limit],
-            :load_more_call => load_more_call,
-            :no_threads => options[:no_threads]
-          })
+                                   :seed_page => students,
+                                   :total => total_results,
+                                   :per_page => params[:limit],
+                                   :load_more_call => load_more_call,
+                                   :no_threads => options[:no_threads]
+                                 })
         else
           students
         end
@@ -119,12 +118,12 @@ module Bright
             api.get_schools(params, {:wrap_in_collection => false})
           }
           ResponseCollection.new({
-            :seed_page => schools,
-            :total => total_results,
-            :per_page => params[:limit],
-            :load_more_call => load_more_call,
-            :no_threads => options[:no_threads]
-          })
+                                   :seed_page => schools,
+                                   :total => total_results,
+                                   :per_page => params[:limit],
+                                   :load_more_call => load_more_call,
+                                   :no_threads => options[:no_threads]
+                                 })
         else
           schools
         end
@@ -186,12 +185,12 @@ module Bright
       def retrieve_access_token
         connection = Bright::Connection.new(self.connection_options[:token_uri])
         response = connection.request(:post,
-          {
-            "grant_type" => "client_credentials",
-            "username" => self.connection_options[:client_id],
-            "password" => self.connection_options[:client_secret]
-          },
-          self.headers_for_access_token
+                                      {
+                                        "grant_type" => "client_credentials",
+                                        "username" => self.connection_options[:client_id],
+                                        "password" => self.connection_options[:client_secret]
+                                      },
+                                      self.headers_for_access_token
         )
         if !response.error?
           response_hash = JSON.parse(response.body)
@@ -281,9 +280,6 @@ module Bright
         }.reject{|k,v| v.blank?}
         unless user_params["identifier"].blank?
           user_data_hsh[:sis_student_id] = user_params["identifier"]
-        end
-        unless user_params["userMasterIdentifier"].blank?
-          user_data_hsh[:state_student_id] = user_params["userMasterIdentifier"]
         end
         unless user_params["userIds"].blank?
           if (state_id_hsh = user_params["userIds"].detect{|user_id_hsh| user_id_hsh["type"] == "stateID"})
