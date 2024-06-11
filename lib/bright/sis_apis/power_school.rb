@@ -247,7 +247,10 @@ module Bright
           end
 
           if !attrs.dig("ethnicity_race", "federal_ethnicity").nil?
-            cattrs[:hispanic_ethnicity] = attrs.dig("ethnicity_race", "federal_ethnicity").to_bool
+            begin
+              cattrs[:hispanic_ethnicity] = attrs.dig("ethnicity_race", "federal_ethnicity").to_bool
+            rescue
+            end
           end
         end
 
