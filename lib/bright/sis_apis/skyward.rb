@@ -168,7 +168,8 @@ module Bright
           :sis_student_id => user_params["DisplayId"],
           :state_student_id => user_params["StateId"],
           :projected_graduation_year => user_params["GradYr"],
-          :gender => user_params["Gender"],
+          # To avoid a mismatch of attributes, we'll ignore for now
+          # :gender => user_params["Gender"],
           :hispanic_ethnicity => user_params["HispanicLatinoEthnicity"],
           :relationship_type => user_params["RelationshipType"]
         }.reject{|k,v| v.blank?}

@@ -3,7 +3,7 @@ require 'securerandom'
 module Bright
   class Student < Model
     @attribute_names = [:client_id, :api_id, :first_name, :middle_name, :last_name, :nick_name,
-                        :birth_date, :grade, :grade_school_year, :projected_graduation_year, :gender,
+                        :birth_date, :grade, :grade_school_year, :projected_graduation_year, :sex,
                         :hispanic_ethnicity, :race, :image, :primary_language, :secondary_language,
                         :homeless_code, :frl_status, :sis_student_id,
                         :state_student_id, :last_modified]
