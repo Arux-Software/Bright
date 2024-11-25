@@ -176,8 +176,8 @@ module Bright
           end
           {
             "Authorization" => "Bearer #{connection_options[:access_token]}",
-            "Accept" => "application/json;charset=UTF-8",
-            "Content-Type" => "application/json;charset=UTF-8"
+            "Accept" => "application/json",
+            "Content-Type" => "application/json"
           }
         end
       end
