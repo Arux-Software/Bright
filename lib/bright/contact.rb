@@ -3,10 +3,10 @@ require "securerandom"
 module Bright
   class Contact < Model
     @attribute_names = [:client_id, :api_id, :first_name, :middle_name, :last_name, :nick_name,
-      :birth_date, :gender, :relationship_type,
-      :hispanic_ethnicity, :race, :image,
-      :sis_student_id, :state_student_id, :last_modified]
-    attr_accessor(*@attribute_names)
+                        :birth_date, :sex, :relationship_type,
+                        :hispanic_ethnicity, :race, :image,
+                        :sis_student_id, :state_student_id, :last_modified]
+    attr_accessor *@attribute_names
 
     def self.attribute_names
       @attribute_names

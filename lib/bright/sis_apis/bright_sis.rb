@@ -152,21 +152,21 @@ module Bright
       def convert_to_student_data(student_params)
         return {} if student_params.nil?
         student_data_hsh = {
-          api_id: student_params["uuid"],
-          first_name: student_params["first_name"],
-          middle_name: student_params["middle_name"],
-          last_name: student_params["last_name"],
-          sis_student_id: student_params["student_number"],
-          state_student_id: student_params["state_id"],
-          grade: student_params["grade"],
-          grade_school_year: student_params["grade_school_year"],
-          projected_graduation_year: student_params["graduation_year"],
-          gender: student_params["gender"],
-          frl_status: student_params["frl_status"],
-          image: student_params["picture"],
-          hispanic_ethnicity: student_params["hispanic_latino"],
-          last_modified: student_params["updated_at"]
-        }.reject { |k, v| v.blank? }
+          :api_id => student_params["uuid"],
+          :first_name => student_params["first_name"],
+          :middle_name => student_params["middle_name"],
+          :last_name => student_params["last_name"],
+          :sis_student_id => student_params["student_number"],
+          :state_student_id => student_params["state_id"],
+          :grade => student_params["grade"],
+          :grade_school_year => student_params["grade_school_year"],
+          :projected_graduation_year => student_params["graduation_year"],
+          :sex => student_params["sex"],
+          :frl_status => student_params["frl_status"],
+          :image => student_params["picture"],
+          :hispanic_ethnicity => student_params["hispanic_latino"],
+          :last_modified => student_params["updated_at"]
+        }.reject{|k,v| v.blank?}
         unless student_params["birthdate"].blank?
           student_data_hsh[:birth_date] = Date.parse(student_params["birthdate"]).to_s
         end

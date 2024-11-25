@@ -110,7 +110,7 @@ module Bright
         cattrs[:sis_student_id] = attrs["StudentNumber"]
         cattrs[:state_student_id] = attrs["StateStudentID"]
 
-        cattrs[:gender] = attrs["Sex"]
+        cattrs[:sex] = attrs["Sex"]
         if attrs["Birthdate"]
           begin
             cattrs[:birth_date] = Date.strptime(attrs["Birthdate"], DATE_FORMAT)

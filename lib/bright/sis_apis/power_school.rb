@@ -226,7 +226,8 @@ module Bright
             end
           end
 
-          cattrs[:gender] = attrs["demographics"]["gender"]
+          # To avoid a mismatch of attributes, we'll ignore for now
+          # cattrs[:gender] = attrs["demographics"]["gender"]
 
           pg = attrs["demographics"]["projected_graduation_year"].to_i
           cattrs[:projected_graduation_year] = pg if pg > 0
@@ -277,22 +278,23 @@ module Bright
         return {} if student.nil?
 
         student_data = {
-          client_uid: student.client_id,
-          action: action,
-          id: student.api_id,
-          local_id: student.sis_student_id,
-          state_province_id: student.state_student_id,
-          name: {
-            first_name: student.first_name,
-            middle_name: student.middle_name,
-            last_name: student.last_name
-          }.reject { |k, v| v.respond_to?(:empty?) ? v.empty? : v.nil? },
-          demographics: {
-            gender: student.gender.to_s[0].to_s.upcase,
-            birth_date: (student.birth_date ? student.birth_date.strftime(DATE_FORMAT) : nil),
-            projected_graduation_year: student.projected_graduation_year
-          }.reject { |k, v| v.respond_to?(:empty?) ? v.empty? : v.nil? }
-        }.merge(additional_params).reject { |k, v| v.respond_to?(:empty?) ? v.empty? : v.nil? }
+          :client_uid => student.client_id,
+          :action => action,
+          :id => student.api_id,
+          :local_id => student.sis_student_id,
+          :state_province_id => student.state_student_id,
+          :name => {
+            :first_name => student.first_name,
+            :middle_name => student.middle_name,
+            :last_name => student.last_name
+          }.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?},
+          :demographics => {
+            # To avoid a mismatch of attributes, we'll ignore for now
+            # :gender => student.gender.to_s[0].to_s.upcase,
+            :birth_date => (student.birth_date ? student.birth_date.strftime(DATE_FORMAT) : nil),
+            :projected_graduation_year => student.projected_graduation_year
+          }.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
+        }.merge(additional_params).reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
 
         # apply enrollment info
         if student.enrollment
