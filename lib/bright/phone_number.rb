@@ -1,7 +1,7 @@
 module Bright
   class PhoneNumber < Model
     @attribute_names = [:phone_number, :extension, :type]
-    attr_accessor *@attribute_names
+    attr_accessor(*@attribute_names)
     TYPES = ["Cell", "Home", "Work", "Other"]
 
     def phone_number=(number)
@@ -15,6 +15,5 @@ module Bright
     def extension=(number)
       @extension = number.gsub(/[^0-9]/, "").strip
     end
-
   end
 end

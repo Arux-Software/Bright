@@ -1,7 +1,7 @@
-require 'uri'
-require 'httpi'
-require 'benchmark'
-require 'securerandom'
+require "uri"
+require "httpi"
+require "benchmark"
+require "securerandom"
 
 module Bright
   class Connection
@@ -23,10 +23,10 @@ module Bright
     attr_accessor :proxy_port
 
     def initialize(endpoint)
-      @endpoint     = endpoint.is_a?(URI) ? endpoint : URI.parse(endpoint)
+      @endpoint = endpoint.is_a?(URI) ? endpoint : URI.parse(endpoint)
       @open_timeout = OPEN_TIMEOUT
       @read_timeout = READ_TIMEOUT
-      @verify_peer  = VERIFY_PEER
+      @verify_peer = VERIFY_PEER
       @ignore_http_status = false
       @ssl_version = nil
       @proxy_address = nil
@@ -36,7 +36,6 @@ module Bright
         @logger = Logger.new(STDOUT)
         @logger.level = Logger::INFO
       end
-
     end
 
     def request(method, body, headers = {})
@@ -83,7 +82,6 @@ module Bright
       end
 
       handle_response(result)
-
     ensure
       info "connection_request_total_time=%.4fs" % [Time.now.to_f - request_start], tag
     end
@@ -101,7 +99,7 @@ module Bright
 
     def handle_response(response)
       if @ignore_http_status or !response.error?
-        return response
+        response
       else
         raise ResponseError.new(response, endpoint.to_s)
       end
