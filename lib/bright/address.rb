@@ -1,14 +1,14 @@
 module Bright
   class Address < Model
     @attribute_names = [:street, :apt, :city, :state, :postal_code, :latitude, :longitude, :type]
-    attr_accessor *@attribute_names
+    attr_accessor(*@attribute_names)
 
-    alias lat latitude
-    alias lng longitude
+    alias_method :lat, :latitude
+    alias_method :lng, :longitude
 
     def geographical_coordinates
-      if self.latitude and self.longitude
-        "#{self.latitude},#{self.longitude}"
+      if latitude and longitude
+        "#{latitude},#{longitude}"
       end
     end
   end

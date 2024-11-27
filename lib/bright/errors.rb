@@ -19,7 +19,6 @@ module Bright
     def server_error?
       (500..599).include?(response&.code.to_i)
     end
-
   end
 
   class UnknownAttributeError < NoMethodError

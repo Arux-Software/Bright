@@ -1,7 +1,6 @@
 module Bright
   module SisApi
     class Base
-
       def filter_students_by_params(students, params)
         total = params[:limit]
         count = 0
@@ -12,7 +11,7 @@ module Bright
         students.each do |student|
           break if total and count >= total
 
-          should = (keys).all? do |m|
+          should = keys.all? do |m|
             student.send(m) =~ Regexp.new(Regexp.escape(params[m]), Regexp::IGNORECASE)
           end
           count += 1 if total and should
@@ -29,7 +28,7 @@ module Bright
         rescue Bright::ResponseError => e
           retries += 1
           if e.server_error? && retries <= retry_attempts.to_i
-            puts "retrying #{retries}: #{e.class.to_s} - #{e.to_s}"
+            puts "retrying #{retries}: #{e.class} - #{e}"
             sleep(retries * 3)
             retry
           else
@@ -38,7 +37,7 @@ module Bright
         rescue Errno::ECONNREFUSED, Errno::ECONNRESET, Net::ReadTimeout, Net::OpenTimeout, SocketError, EOFError => e
           retries += 1
           if retries <= retry_attempts.to_i
-            puts "retrying #{retries}: #{e.class.to_s} - #{e.to_s}"
+            puts "retrying #{retries}: #{e.class} - #{e}"
             sleep(retries * 3)
             retry
           else
@@ -46,7 +45,6 @@ module Bright
           end
         end
       end
-
     end
   end
 end

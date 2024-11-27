@@ -1,7 +1,7 @@
 module Bright
   module SisApi
     class Aeries < Base
-      DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
+      DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
       @@description = "Connects to the Aeries API for accessing student information"
       @@doc_url = "http://www.aeries.com/downloads/docs.1234/TechnicalSpecs/Aeries_API_Documentation.pdf"
@@ -18,11 +18,11 @@ module Bright
       end
 
       def get_student_by_api_id(api_id)
-        get_students({:api_id => api_id, :limit => 1}).first
+        get_students({api_id: api_id, limit: 1}).first
       end
 
       def get_student(params)
-        get_students(params.merge(:limit => 1)).first
+        get_students(params.merge(limit: 1)).first
       end
 
       def get_students(params)
@@ -43,15 +43,15 @@ module Bright
 
       def get_students_by_school(school, params = {})
         school_api_id = school.is_a?(School) ? school.api_id : school
-        if params.has_key?(:api_id)
-          path = "api/schools/#{school_api_id}/students/#{params[:api_id]}"
+        path = if params.has_key?(:api_id)
+          "api/schools/#{school_api_id}/students/#{params[:api_id]}"
         elsif params.has_key?(:sis_student_id)
-          path = "api/schools/#{school_api_id}/students/sn/#{params[:sis_student_id]}"
+          "api/schools/#{school_api_id}/students/sn/#{params[:sis_student_id]}"
         else
-          path = "api/schools/#{school_api_id}/students"
+          "api/schools/#{school_api_id}/students"
         end
-        students_response_hash = self.request(:get, path, self.map_student_search_params(params))
-        students_response_hash.collect{|shsh| Student.new(convert_to_student_data(shsh))}
+        students_response_hash = request(:get, path, map_student_search_params(params))
+        students_response_hash.collect { |shsh| Student.new(convert_to_student_data(shsh)) }
       end
 
       def create_student(student)
@@ -63,13 +63,13 @@ module Bright
       end
 
       def get_schools(params = {})
-        schools_response_hash = self.request(:get, 'api/v2/schools', params)
+        schools_response_hash = request(:get, "api/v2/schools", params)
 
-        schools_response_hash.collect{|h| School.new(convert_to_school_data(h))}
+        schools_response_hash.collect { |h| School.new(convert_to_school_data(h)) }
       end
 
       def request(method, path, params = {})
-        uri  = "#{self.connection_options[:uri]}/#{path}"
+        uri = "#{connection_options[:uri]}/#{path}"
         body = nil
         if method == :get
           query = URI.encode_www_form(params)
@@ -80,7 +80,7 @@ module Bright
 
         response = connection_retry_wrapper {
           connection = Bright::Connection.new(uri)
-          headers = self.headers_for_auth
+          headers = headers_for_auth
           connection.request(method, body, headers)
         }
 
@@ -119,9 +119,9 @@ module Bright
           end
         end
 
-        #SchoolCode
+        # SchoolCode
 
-        cattrs.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
+        cattrs.reject { |k, v| v.respond_to?(:empty?) ? v.empty? : v.nil? }
       end
 
       def convert_to_school_data(attrs)
@@ -131,16 +131,15 @@ module Bright
         cattrs[:name] = attrs["Name"]
         cattrs[:number] = attrs["SchoolCode"]
 
-        cattrs.reject{|k,v| v.respond_to?(:empty?) ? v.empty? : v.nil?}
+        cattrs.reject { |k, v| v.respond_to?(:empty?) ? v.empty? : v.nil? }
       end
 
       def headers_for_auth
         {
-            'AERIES-CERT' => self.connection_options[:certificate],
-            'Content-Type' => "application/json"
+          "AERIES-CERT" => connection_options[:certificate],
+          "Content-Type" => "application/json"
         }
       end
-
     end
   end
 end

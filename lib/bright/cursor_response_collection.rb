@@ -1,5 +1,4 @@
 class CursorResponseCollection < ResponseCollection
-
   attr_accessor :collected_objects
 
   def initialize(options = {})
@@ -10,7 +9,7 @@ class CursorResponseCollection < ResponseCollection
   end
 
   def each
-    while (!@next_cursor.blank?) do
+    until @next_cursor.blank?
       objects_hsh = load_more_call.call(@next_cursor)
       objects = objects_hsh[:objects]
       @next_cursor = objects_hsh[:next_cursor]
@@ -22,8 +21,8 @@ class CursorResponseCollection < ResponseCollection
   end
 
   def last
-    self.to_a
-    return @collected_objects.last
+    to_a
+    @collected_objects.last
   end
 
   def loaded_results
@@ -31,15 +30,14 @@ class CursorResponseCollection < ResponseCollection
   end
 
   def total
-    self.to_a
-    self.loaded_results.size
+    to_a
+    loaded_results.size
   end
 
-  alias size total
-  alias length total
+  alias_method :size, :total
+  alias_method :length, :total
 
   def empty?
-    self.to_a.empty?
+    to_a.empty?
   end
-
 end
