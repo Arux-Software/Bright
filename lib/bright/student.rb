@@ -26,9 +26,9 @@ module Bright
     end
 
     def <=>(other)
-      (sis_student_id and sis_student_id == other.sis_student_id) or
-        (state_student_id and state_student_id == other.state_student_id) or
-        (first_name == other.first_name and middle_name == other.middle_name and last_name == other.last_name and birth_date == other.birth_date)
+      (sis_student_id && sis_student_id == other.sis_student_id) ||
+        (state_student_id && state_student_id == other.state_student_id) ||
+        (first_name == other.first_name && middle_name == other.middle_name && last_name == other.last_name && birth_date == other.birth_date)
     end
 
     alias_method :id, :client_id
