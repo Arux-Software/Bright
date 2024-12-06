@@ -1,6 +1,6 @@
 # Bright
 
-TODO: Write a gem description
+The `bright` gem provides a framework and tools for interacting with various Student Information Systems (SIS). It supports multiple SIS platforms, including Infinite Campus, Skyward, TSIS, Aeries, and PowerSchool, offering functionalities to retrieve and manage student and school data.
 
 ## Installation
 
