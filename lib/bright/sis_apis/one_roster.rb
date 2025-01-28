@@ -163,14 +163,7 @@ module Bright
       protected
 
       def headers_for_auth(uri)
-        case api_version
-        when Gem::Version.new("1.1")
-          site = URI.parse(connection_options[:uri])
-          site = "#{site.scheme}://#{site.host}"
-          consumer = OAuth::Consumer.new(connection_options[:client_id], connection_options[:client_secret], {site: site, scheme: :header})
-          options = {timestamp: Time.now.to_i, nonce: SecureRandom.uuid}
-          {"Authorization" => consumer.create_signed_request(:get, uri, nil, options)["Authorization"]}
-        when Gem::Version.new("1.2")
+        if api_version >= Gem::Version.new("1.2") || connection_options[:token_uri].present?
           if connection_options[:access_token].nil? || (connection_options[:access_token_expires] < Time.now)
             retrieve_access_token
           end
@@ -179,6 +172,12 @@ module Bright
             "Accept" => "application/json",
             "Content-Type" => "application/json"
           }
+        else
+          site = URI.parse(connection_options[:uri])
+          site = "#{site.scheme}://#{site.host}"
+          consumer = OAuth::Consumer.new(connection_options[:client_id], connection_options[:client_secret], {site: site, scheme: :header})
+          options = {timestamp: Time.now.to_i, nonce: SecureRandom.uuid}
+          {"Authorization" => consumer.create_signed_request(:get, uri, nil, options)["Authorization"]}
         end
       end
 
