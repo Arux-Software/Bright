@@ -40,7 +40,7 @@ module Bright
           {roles: "student"}.merge(params)
         end
         st_hsh = request(:get, "users/#{api_id}", params)
-        Student.new(convert_to_user_data(st_hsh["user"])) if st_hsh and st_hsh["user"]
+        Student.new(convert_to_user_data(st_hsh["user"])) if st_hsh && st_hsh["user"]
       end
 
       def get_student(params = {}, options = {})
@@ -56,7 +56,7 @@ module Bright
         params[:limit] = params[:limit] || options[:limit] || 100
         students_response_hash = request(:get, "users", map_search_params(params))
         total_results = students_response_hash[:response_headers]["x-total-count"].to_i
-        if students_response_hash and students_response_hash["users"]
+        if students_response_hash && students_response_hash["users"]
           students_hash = [students_response_hash["users"]].flatten
 
           students = students_hash.compact.collect { |st_hsh|
@@ -92,7 +92,7 @@ module Bright
 
       def get_school_by_api_id(api_id, params = {})
         sc_hsh = request(:get, "schools/#{api_id}", params)
-        School.new(convert_to_school_data(sc_hsh["org"])) if sc_hsh and sc_hsh["org"]
+        School.new(convert_to_school_data(sc_hsh["org"])) if sc_hsh && sc_hsh["org"]
       end
 
       def get_school(params = {}, options = {})
@@ -103,7 +103,7 @@ module Bright
         params[:limit] = params[:limit] || options[:limit] || 100
         schools_response_hash = request(:get, "schools", map_school_search_params(params))
         total_results = schools_response_hash[:response_headers]["x-total-count"].to_i
-        if schools_response_hash and schools_response_hash["orgs"]
+        if schools_response_hash && schools_response_hash["orgs"]
           schools_hash = [schools_response_hash["orgs"]].flatten
 
           schools = schools_hash.compact.collect { |sc_hsh|
@@ -131,7 +131,7 @@ module Bright
 
       def get_contact_by_api_id(api_id, params = {})
         contact_hsh = request(:get, "users/#{api_id}", params)
-        Contact.new(convert_to_user_data(contact_hsh["user"], bright_type: "Contact")) if contact_hsh and contact_hsh["user"]
+        Contact.new(convert_to_user_data(contact_hsh["user"], bright_type: "Contact")) if contact_hsh && contact_hsh["user"]
       end
 
       def request(method, path, params = {})
@@ -154,8 +154,8 @@ module Bright
           response_hash = JSON.parse(response.body)
           response_hash[:response_headers] = response.headers
         else
-          puts "#{response.inspect}"
-          puts "#{response.body}"
+          puts response.inspect
+          puts response.body
         end
         response_hash
       end
@@ -163,15 +163,8 @@ module Bright
       protected
 
       def headers_for_auth(uri)
-        case api_version
-        when Gem::Version.new("1.1")
-          site = URI.parse(connection_options[:uri])
-          site = "#{site.scheme}://#{site.host}"
-          consumer = OAuth::Consumer.new(connection_options[:client_id], connection_options[:client_secret], {site: site, scheme: :header})
-          options = {timestamp: Time.now.to_i, nonce: SecureRandom.uuid}
-          {"Authorization" => consumer.create_signed_request(:get, uri, nil, options)["Authorization"]}
-        when Gem::Version.new("1.2")
-          if connection_options[:access_token].nil? or connection_options[:access_token_expires] < Time.now
+        if api_version >= Gem::Version.new("1.2") || connection_options[:token_uri].present?
+          if connection_options[:access_token].nil? || (connection_options[:access_token_expires] < Time.now)
             retrieve_access_token
           end
           {
@@ -179,6 +172,12 @@ module Bright
             "Accept" => "application/json",
             "Content-Type" => "application/json"
           }
+        else
+          site = URI.parse(connection_options[:uri])
+          site = "#{site.scheme}://#{site.host}"
+          consumer = OAuth::Consumer.new(connection_options[:client_id], connection_options[:client_secret], {site: site, scheme: :header})
+          options = {timestamp: Time.now.to_i, nonce: SecureRandom.uuid}
+          {"Authorization" => consumer.create_signed_request(:get, uri, nil, options)["Authorization"]}
         end
       end
 
@@ -314,7 +313,7 @@ module Bright
         user_data_hsh.merge!(demographics_hash) unless demographics_hash.blank?
 
         # if you're a student, build the contacts too
-        if bright_type == "Student" and !user_params["agents"].blank?
+        if (bright_type == "Student") && !user_params["agents"].blank?
           user_data_hsh[:contacts] = user_params["agents"].collect do |agent_hsh|
             get_contact_by_api_id(agent_hsh["sourcedId"])
           rescue Bright::ResponseError => e
