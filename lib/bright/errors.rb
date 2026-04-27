@@ -16,8 +16,13 @@ module Bright
       response.body
     end
 
-    def server_error?
-      (500..599).include?(response&.code.to_i)
+    def retryable_error?
+      response_code = response&.code.to_i
+
+      return true if (500..599).include?(response_code)
+      return true if 408 == response_code
+
+      false
     end
   end
 
