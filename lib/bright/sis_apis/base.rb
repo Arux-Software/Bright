@@ -27,7 +27,7 @@ module Bright
           yield
         rescue Bright::ResponseError => e
           retries += 1
-          if e.server_error? && retries <= retry_attempts.to_i
+          if e.retryable_error? && retries <= retry_attempts.to_i
             puts "retrying #{retries}: #{e.class} - #{e}"
             sleep(retries * 3)
             retry
