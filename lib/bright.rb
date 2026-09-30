@@ -27,6 +27,7 @@ require_relative "bright/sis_apis/synergy"
 require_relative "bright/sis_apis/focus"
 
 require_relative "bright/sis_apis/one_roster"
+require_relative "bright/sis_apis/one_roster/aeries"
 require_relative "bright/sis_apis/one_roster/infinite_campus"
 require_relative "bright/sis_apis/one_roster/skyward"
 
